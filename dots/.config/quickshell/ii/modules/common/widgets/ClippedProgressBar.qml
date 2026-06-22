@@ -31,6 +31,7 @@ ProgressBar {
     font {
         pixelSize: 13
         weight: Font.Normal
+        letterSpacing: -1.5
     }
 
     background: Item {
