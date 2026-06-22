@@ -109,7 +109,7 @@ Singleton {
                 property int fakeScreenRounding: 2 // 0: None | 1: Always | 2: When not fullscreen
                 property JsonObject fonts: JsonObject {
                     property string main: "Gabarito"
-                    property string numbers: "Gabarito"
+                    property string numbers: "Space Grotesk"
                     property string title: "Gabarito"
                     property string iconNerd: "JetBrainsMono Nerd Font"
                     property string monospace: "JetBrainsMono Nerd Font"
