@@ -17,23 +17,12 @@ ProgressBar {
     property color trackColor: ColorUtils.transparentize(highlightColor, 0.5) ?? "#F1D3F9"
     property alias radius: contentItem.radius
     property string text
-    default property Item textMask: Item {
-        width: valueBarWidth
-        height: valueBarHeight
-        StyledText {
-            anchors.centerIn: parent
-            font.pixelSize: root.font.pixelSize
-            font.weight: root.font.weight
-            font.letterSpacing: root.font.letterSpacing
-            text: root.text
-        }
-    }
+    default property Item textMask
 
     text: Math.round(value * 100)
     font {
         pixelSize: 13
         weight: Font.Normal
-        letterSpacing: -1.5
     }
 
     background: Item {
