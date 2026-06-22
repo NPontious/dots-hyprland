@@ -30,7 +30,7 @@ ProgressBar {
     text: Math.round(value * 100)
     font {
         pixelSize: 13
-        weight: Font.Medium
+        weight: Font.Normal
     }
 
     background: Item {
