@@ -1,0 +1,16 @@
+name: Trigger illogical-flake update
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send repository dispatch to illogical-flake
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: npontious/illogical-flake
+          event-type: dots-updated
