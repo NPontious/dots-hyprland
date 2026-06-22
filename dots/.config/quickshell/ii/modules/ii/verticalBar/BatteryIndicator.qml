@@ -60,7 +60,9 @@ MouseArea {
                 StyledText {
                     visible: text.length <= 2
                     anchors.horizontalCenter: parent.horizontalCenter
-                    font: batteryProgress.font
+                    font.pixelSize: batteryProgress.font.pixelSize
+                    font.weight: batteryProgress.font.weight
+                    font.letterSpacing: -1.5
                     text: batteryProgress.text
                 }
             }

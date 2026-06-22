@@ -53,6 +53,7 @@ MouseArea {
                     Layout.alignment: Qt.AlignVCenter
                     font.pixelSize: batteryProgress.font.pixelSize
                     font.weight: batteryProgress.font.weight
+                    font.letterSpacing: -1.5
                     text: batteryProgress.text
                 }
             }
