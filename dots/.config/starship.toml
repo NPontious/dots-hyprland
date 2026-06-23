@@ -57,8 +57,8 @@ deleted = "󰍴 "
 
 [git_metrics]
 disabled = false
-added_style = "bold green bg:252"
-deleted_style = "bold red bg:252"
+added_style = "bold fg:235 bg:252"
+deleted_style = "bold fg:235 bg:252"
 format = "([ +$added]($added_style)[/](fg:235 bg:252)[-$deleted]($deleted_style))"
 
 [hostname]
