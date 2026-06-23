@@ -30,4 +30,13 @@ if status is-interactive
     if test "$TERM" = "xterm-kitty"
         alias ssh 'kitten ssh'
     end
+
+    # nix-shell wrapper to keep Fish shell and Starship config active
+    function nix-shell
+        if not contains -- --run $argv; and not contains -- --command $argv
+            command nix-shell $argv --run fish
+        else
+            command nix-shell $argv
+        end
+    end
 end
