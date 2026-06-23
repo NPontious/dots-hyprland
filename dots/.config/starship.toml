@@ -39,27 +39,27 @@ tag_symbol = " "
 
 [git_state]
 format = '[\($state( $progress_current of $progress_total)\)]($style) '
-cherry_pick = "[🍒 PICKING](bold red)"
+cherry_pick = "[ PICKING](bold red)"
 
 [git_status]
 style = "fg:235 bg:252"
 format = "([ $all_status$ahead_behind]($style))"
-conflicted = "🏳 "
-ahead = "🏎💨 "
-behind = "😰 "
-diverged = "😵 "
-untracked = "🤷 "
-stashed = "📦 "
-modified = "📝 "
-staged = '[++\($count\)](green bg:252)'
-renamed = "✍️ "
-deleted = "🗑 "
+conflicted = "󰅰 "
+ahead = "󰶣 "
+behind = "󰶡 "
+diverged = "󰹹 "
+untracked = "󰙔 "
+stashed = "󰗓 "
+modified = "󰏬 "
+staged = '[󰐗\($count\) ](green bg:252)'
+renamed = "󰑕 "
+deleted = "󰍴 "
 
 [git_metrics]
 disabled = false
 added_style = "bold green bg:252"
 deleted_style = "bold red bg:252"
-format = "( [+$added]($added_style)/[-$deleted]($deleted_style))"
+format = "([ +$added]($added_style)[/](fg:235 bg:252)[-$deleted]($deleted_style))"
 
 [hostname]
 ssh_only = false
@@ -115,7 +115,7 @@ format = " [$output]($style) "
 [custom.nix_shell_pill]
 command = 'echo ""'
 when = 'test -n "$IN_NIX_SHELL"'
-format = '[](bold fg:252)[$output](fg:235 bg:252)[](bold fg:252) '
+format = '[](bold fg:252)[ $output ](bold fg:235 bg:252)[](bold fg:252) '
 
 [cmd_duration]
 min_time = 0
