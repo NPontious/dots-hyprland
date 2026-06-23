@@ -4,7 +4,7 @@ Note:
 - The scripts here are **not** meant to be executed directly.
 - This folder should reflect the equivalents of `/sdata/dist-arch/` but under Fedora.
   - **When `/sdata/dist-arch/` is newer than this folder, an update on this folder is very likely needed.**
-  - Useful link: [Commit history on sdata/dist-arch/](https://github.com/end-4/dots-hyprland/commits/main/sdata/dist-arch)
+  - Useful link: [Commit history on sdata/dist-arch/](https://github.com/npontious/dots-hyprland/commits/main/sdata/dist-arch)
 - See also [Install scripts | illogical-impulse](https://ii.clsty.link/en/dev/inst-script/)
 
 ## Contributors

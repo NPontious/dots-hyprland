@@ -470,7 +470,7 @@ ApplicationWindow {
                             nerdIcon: "󰊤"
                             mainText: Translation.tr("GitHub")
                             onClicked: {
-                                Qt.openUrlExternally("https://github.com/end-4/dots-hyprland");
+                                Qt.openUrlExternally("https://github.com/npontious/dots-hyprland");
                             }
                         }
                         RippleButtonWithIcon {

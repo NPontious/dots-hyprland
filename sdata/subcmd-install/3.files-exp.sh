@@ -1,7 +1,7 @@
 # This script is meant to be sourced.
 # It's not for directly running.
 
-# See https://github.com/end-4/dots-hyprland/issues/2137
+# See https://github.com/npontious/dots-hyprland/issues/2137
 #
 # Stage 1 todos:
 # TODO: Properly handle hyprland config, ~/.config/hypr/hyprland.conf should be overwritten only when firstrun

@@ -99,7 +99,7 @@ ContentPage {
                     font.pixelSize: Appearance.font.pixelSize.title
                 }
                 StyledText {
-                    text: "https://github.com/end-4/dots-hyprland"
+                    text: "https://github.com/npontious/dots-hyprland"
                     font.pixelSize: Appearance.font.pixelSize.normal
                     textFormat: Text.MarkdownText
                     onLinkActivated: (link) => {
@@ -126,14 +126,14 @@ ContentPage {
                 materialIconFill: false
                 mainText: Translation.tr("Issues")
                 onClicked: {
-                    Qt.openUrlExternally("https://github.com/end-4/dots-hyprland/issues")
+                    Qt.openUrlExternally("https://github.com/npontious/dots-hyprland/issues")
                 }
             }
             RippleButtonWithIcon {
                 materialIcon: "forum"
                 mainText: Translation.tr("Discussions")
                 onClicked: {
-                    Qt.openUrlExternally("https://github.com/end-4/dots-hyprland/discussions")
+                    Qt.openUrlExternally("https://github.com/npontious/dots-hyprland/discussions")
                 }
             }
             RippleButtonWithIcon {

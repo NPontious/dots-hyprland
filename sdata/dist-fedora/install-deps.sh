@@ -25,7 +25,7 @@ function r() {
 
 # Init local RPM repo and download rpms from releases there.
 function init_local_repo() {
-    url="https://api.github.com/repos/end-4/ii-package-builds/releases/tags/packages-fedora"
+    url="https://api.github.com/repos/npontious/ii-package-builds/releases/tags/packages-fedora"
     path="$HOME/.cache/illogical-impulse-repo"
 
     rm -rf -- "$path"

@@ -7,7 +7,7 @@ pause
 
 printf "${STY_YELLOW}"
 printf "============WARNING/NOTE (2)============\n"
-printf "https://github.com/end-4/dots-hyprland/blob/main/sdata/dist-gentoo/README.md\n"
+printf "https://github.com/npontious/dots-hyprland/blob/main/sdata/dist-gentoo/README.md\n"
 printf "Checkout the above README for potential bug fixes or additional information\n\n"
 printf "${STY_RST}"
 pause
