@@ -10,7 +10,7 @@ add_newline = false
 # $directory $fill $git_branch $cmd_duration
 #  $character"""
 format = """
-$cmd_duration $directory$git_branch
+$cmd_duration [](bold fg:255)[󰉋 ](bg:255 fg:240)${custom.nix_separator}${custom.normal_separator}$directory$git_branch$git_metrics
   $character"""
 
 [fill]
@@ -53,6 +53,12 @@ staged = '[++\($count\)](green)'
 renamed = " ✍️ "
 deleted = " 🗑 "
 
+[git_metrics]
+disabled = false
+added_style = "bold green"
+deleted_style = "bold red"
+format = "([+$added]($added_style)/[-$deleted]($deleted_style) )"
+
 [hostname]
 ssh_only = false
 format =  "[•$hostname](bg:252 bold fg:235)[](bold fg:252)"
@@ -86,7 +92,7 @@ read_only = "  "
 style = "bg:255 fg:240"
 truncation_length = 2
 truncation_symbol = ".../"
-format = '[](bold fg:255)[󰉋 → $path]($style)[](bold fg:255)'
+format = '[$path]($style)[](bold fg:255)'
 
 
 [directory.substitutions]
@@ -97,6 +103,18 @@ format = '[](bold fg:255)[󰉋 → $path]($style)[](bold fg:255)'
 "Pictures" = "  "
 "Videos" = "  "
 "GitHub" = " 󰊤 "
+
+[custom.nix_separator]
+command = 'echo ""'
+when = 'test -n "$IN_NIX_SHELL"'
+style = "bg:255 fg:240"
+format = "[$output ]($style)"
+
+[custom.normal_separator]
+command = 'echo "→"'
+when = 'test -z "$IN_NIX_SHELL"'
+style = "bg:255 fg:240"
+format = "[$output ]($style)"
 
 [cmd_duration]
 min_time = 0
