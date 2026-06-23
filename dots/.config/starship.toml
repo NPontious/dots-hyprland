@@ -10,7 +10,7 @@ add_newline = false
 # $directory $fill $git_branch $cmd_duration
 #  $character"""
 format = """
-$cmd_duration [](bold fg:255)[󰉋 ](bg:255 fg:240)${custom.nix_separator}${custom.normal_separator}$directory$git_branch$git_metrics
+$cmd_duration $directory${custom.prompt_separator}${custom.nix_shell_pill}([](bold fg:252)$git_branch$git_status$git_metrics[](bold fg:252) )
   $character"""
 
 [fill]
@@ -27,11 +27,11 @@ error_symbol = "[ ](bold fg:244)"
 disabled = true
 
 [git_branch]
-style = "bg: 252"
-symbol = "󰘬"
+style = "fg:235 bg:252"
+symbol = "󰘬 "
 truncation_length = 12
 truncation_symbol = ""
-format = " 󰜥 [](bold fg:252)[$symbol $branch(:$remote_branch)](fg:235 bg:252)[ ](bold fg:252)"
+format = "[$symbol$branch(:$remote_branch)]($style)"
 
 [git_commit]
 commit_hash_length = 4
@@ -42,22 +42,24 @@ format = '[\($state( $progress_current of $progress_total)\)]($style) '
 cherry_pick = "[🍒 PICKING](bold red)"
 
 [git_status]
-conflicted = " 🏳 "
-ahead = " 🏎💨 "
-behind = " 😰 "
-diverged = " 😵 "
-untracked = " 🤷 ‍"
-stashed = " 📦 "
-modified = " 📝 "
-staged = '[++\($count\)](green)'
-renamed = " ✍️ "
-deleted = " 🗑 "
+style = "fg:235 bg:252"
+format = "([ $all_status$ahead_behind]($style))"
+conflicted = "🏳 "
+ahead = "🏎💨 "
+behind = "😰 "
+diverged = "😵 "
+untracked = "🤷 "
+stashed = "📦 "
+modified = "📝 "
+staged = '[++\($count\)](green bg:252)'
+renamed = "✍️ "
+deleted = "🗑 "
 
 [git_metrics]
 disabled = false
-added_style = "bold green"
-deleted_style = "bold red"
-format = "([+$added]($added_style)/[-$deleted]($deleted_style) )"
+added_style = "bold green bg:252"
+deleted_style = "bold red bg:252"
+format = "( [+$added]($added_style)/[-$deleted]($deleted_style))"
 
 [hostname]
 ssh_only = false
@@ -92,7 +94,7 @@ read_only = "  "
 style = "bg:255 fg:240"
 truncation_length = 2
 truncation_symbol = ".../"
-format = '[$path]($style)[](bold fg:255)'
+format = '[](bold fg:255)[󰉋 → $path]($style)[](bold fg:255)'
 
 
 [directory.substitutions]
@@ -104,17 +106,16 @@ format = '[$path]($style)[](bold fg:255)'
 "Videos" = "  "
 "GitHub" = " 󰊤 "
 
-[custom.nix_separator]
+[custom.prompt_separator]
+command = 'echo "󰜥"'
+when = 'test -n "$IN_NIX_SHELL" || git rev-parse --is-inside-work-tree 2>/dev/null'
+style = "bold fg:243"
+format = " [$output]($style) "
+
+[custom.nix_shell_pill]
 command = 'echo ""'
 when = 'test -n "$IN_NIX_SHELL"'
-style = "bg:255 fg:240"
-format = "[$output ]($style)"
-
-[custom.normal_separator]
-command = 'echo "→"'
-when = 'test -z "$IN_NIX_SHELL"'
-style = "bg:255 fg:240"
-format = "[$output ]($style)"
+format = '[](bold fg:252)[$output](fg:235 bg:252)[](bold fg:252) '
 
 [cmd_duration]
 min_time = 0
