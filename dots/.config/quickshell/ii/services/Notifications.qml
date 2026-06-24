@@ -73,7 +73,7 @@ Singleton {
         }
     }
 
-    property bool silent: false
+    property bool silent: true
     property int unread: 0
     property var filePath: Directories.notificationsPath
     property list<Notif> list: []
