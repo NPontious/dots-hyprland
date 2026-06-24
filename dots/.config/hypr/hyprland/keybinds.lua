@@ -57,8 +57,8 @@ hl.bind("CTRL + SUPER + R", hl.dsp.exec_cmd("pkill -x .quickshell-wra || pkill -
 hl.bind("CTRL + SUPER + P", hl.dsp.global("quickshell:panelFamilyCycle"), { description = "Shell: Cycle panel family" })
 
 --# Screenshot, Record, OCR, Color picker, Clipboard history
-hl.bind("SUPER + V", hl.dsp.exec_cmd(qsIpcCall .. " search clipboardToggle"), { description = "Utilities: Clipboard history" })
-hl.bind("SUPER + Period", hl.dsp.exec_cmd(qsIpcCall .. " search emojiToggle"), { description = "Utilities: Emoji picker" })
+hl.bind("SUPER + V", hl.dsp.global("quickshell:overviewClipboardToggle"), { description = "Utilities: Clipboard history" })
+hl.bind("SUPER + Period", hl.dsp.global("quickshell:overviewEmojiToggle"), { description = "Utilities: Emoji picker" })
 hl.bind("SUPER + SHIFT + S", hl.dsp.global("quickshell:regionScreenshot"), { description = "Utilities: Screen snip" })
 hl.bind("SUPER + SHIFT + S",
     hl.dsp.exec_cmd(qsIsAlive .. " || pidof slurp || hyprshot --freeze --clipboard-only --mode region --silent"))
