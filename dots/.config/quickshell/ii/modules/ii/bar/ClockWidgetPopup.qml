@@ -34,15 +34,28 @@ StyledPopup {
             Layout.topMargin: 4
             spacing: 2
             
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.bottomMargin: 2
+                
+                StyledText {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                    text: Qt.locale().toString(calendarView.focusedDate, "MMMM yyyy")
+                    font.bold: true
+                    color: Appearance.colors.colOnSurface
+                }
+            }
+
             DayOfWeekRow {
                 Layout.fillWidth: true
                 locale: Qt.locale()
                 spacing: calendarView.buttonSpacing
-                implicitHeight: 24
+                implicitHeight: 20
                 delegate: Item {
                     id: dayOfWeekItem
                     required property var model
-                    implicitHeight: 24
+                    implicitHeight: 20
                     implicitWidth: calendarView.buttonSize
                     StyledText {
                         anchors.centerIn: parent
@@ -54,10 +67,10 @@ StyledPopup {
             CalendarView {
                 id: calendarView
                 locale: Qt.locale()
-                verticalPadding: 2
-                buttonSize: 30
-                buttonSpacing: 4
-                buttonVerticalSpacing: 2
+                verticalPadding: 0
+                buttonSize: 24
+                buttonSpacing: 2
+                buttonVerticalSpacing: 0
                 Layout.fillWidth: true
                 delegate: RippleButton {
                     id: dayButton
