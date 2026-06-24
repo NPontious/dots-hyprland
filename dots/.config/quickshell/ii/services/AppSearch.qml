@@ -102,13 +102,16 @@ Singleton {
     function guessIcon(str) {
         if (!str || str.length == 0) return "image-missing";
 
-        // Quickshell's desktop entry lookup
-        const entry = DesktopEntries.byId(str);
-        if (entry) return entry.icon;
-
         // Normal substitutions
         if (substitutions[str]) return substitutions[str];
         if (substitutions[str.toLowerCase()]) return substitutions[str.toLowerCase()];
+
+        // Quickshell's desktop entry lookup
+        const entry = DesktopEntries.byId(str);
+        if (entry) {
+            if (iconExists(entry.icon)) return entry.icon;
+            if (substitutions[entry.icon]) return substitutions[entry.icon];
+        }
 
         // Regex substitutions
         for (let i = 0; i < regexSubstitutions.length; i++) {
