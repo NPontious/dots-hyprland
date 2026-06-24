@@ -27,8 +27,22 @@ if status is-interactive
     if test "$TERM" != "linux"
         alias ls 'eza --icons'
     end
+    function restore_host_colors
+        if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+            cat ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+        end
+    end
+
     if test "$TERM" = "xterm-kitty"
-        alias ssh 'kitten ssh'
+        function ssh
+            kitten ssh $argv
+            restore_host_colors
+        end
+    else
+        function ssh
+            command ssh $argv
+            restore_host_colors
+        end
     end
 
     # nix-shell wrapper to keep Fish shell and Starship config active
