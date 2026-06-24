@@ -513,7 +513,7 @@ Singleton {
                     }
                 }
                 property JsonObject cornerOpen: JsonObject {
-                    property bool enable: true
+                    property bool enable: false
                     property bool bottom: false
                     property bool valueScroll: true
                     property bool clickless: false
