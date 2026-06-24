@@ -98,6 +98,14 @@ Scope {
         function toggleReleaseInterrupt() {
             GlobalStates.superReleaseMightTrigger = false;
         }
+        function clipboardToggle() {
+            GlobalStates.superReleaseMightTrigger = false;
+            root.toggleClipboard();
+        }
+        function emojiToggle() {
+            GlobalStates.superReleaseMightTrigger = false;
+            root.toggleEmojis();
+        }
     }
 
     GlobalShortcut {

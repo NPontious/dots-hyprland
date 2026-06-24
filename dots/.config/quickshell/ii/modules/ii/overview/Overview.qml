@@ -142,7 +142,12 @@ Scope {
             GlobalStates.superReleaseMightTrigger = false;
         }
         function clipboardToggle() {
+            GlobalStates.superReleaseMightTrigger = false;
             overviewScope.toggleClipboard();
+        }
+        function emojiToggle() {
+            GlobalStates.superReleaseMightTrigger = false;
+            overviewScope.toggleEmojis();
         }
     }
 
