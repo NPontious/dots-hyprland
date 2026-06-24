@@ -520,7 +520,7 @@ Singleton {
                     property int cornerRegionWidth: 250
                     property int cornerRegionHeight: 5
                     property bool visualize: false
-                    property bool clicklessCornerEnd: true
+                    property bool clicklessCornerEnd: false
                     property int clicklessCornerVerticalOffset: 1
                 }
 
