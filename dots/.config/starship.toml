@@ -51,9 +51,20 @@ diverged = "󰹹 "
 untracked = "󰙔 "
 stashed = "󰗓 "
 modified = "󰏬 "
-staged = '[󰐗\($count\) ](green bg:252)'
+staged = "󰐗 "
 renamed = "󰑕 "
 deleted = "󰍴 "
+
+conflicted_style = "fg:235 bg:252"
+ahead_style = "fg:235 bg:252"
+behind_style = "fg:235 bg:252"
+diverged_style = "fg:235 bg:252"
+untracked_style = "fg:235 bg:252"
+stashed_style = "fg:235 bg:252"
+modified_style = "fg:235 bg:252"
+staged_style = "fg:235 bg:252"
+renamed_style = "fg:235 bg:252"
+deleted_style = "fg:235 bg:252"
 
 [git_metrics]
 disabled = false
