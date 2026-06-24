@@ -138,6 +138,7 @@ Scope {
         description: "Toggle clipboard query on overview widget"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             root.toggleClipboard();
         }
     }
@@ -147,6 +148,7 @@ Scope {
         description: "Toggle emoji query on overview widget"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             root.toggleEmojis();
         }
     }
