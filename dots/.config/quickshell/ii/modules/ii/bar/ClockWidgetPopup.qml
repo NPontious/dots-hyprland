@@ -48,7 +48,7 @@ StyledPopup {
             }
 
             DayOfWeekRow {
-                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
                 locale: Qt.locale()
                 spacing: calendarView.buttonSpacing
                 implicitHeight: 20
@@ -66,12 +66,30 @@ StyledPopup {
             }
             CalendarView {
                 id: calendarView
+                Layout.alignment: Qt.AlignHCenter
                 locale: Qt.locale()
                 verticalPadding: 0
                 buttonSize: 24
                 buttonSpacing: 2
                 buttonVerticalSpacing: 0
-                Layout.fillWidth: true
+                
+                property int numWeeks: {
+                    const date = calendarView.focusedDate;
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    const firstDayOfMonth = new Date(year, month, 1);
+                    const lastDayOfMonth = new Date(year, month + 1, 0);
+                    const firstDayOfWeek = calendarView.locale.firstDayOfWeek;
+                    
+                    let startOffset = firstDayOfMonth.getDay() - firstDayOfWeek;
+                    if (startOffset < 0) startOffset += 7;
+                    
+                    const totalDays = lastDayOfMonth.getDate() + startOffset;
+                    return Math.ceil(totalDays / 7);
+                }
+                
+                implicitHeight: (numWeeks * buttonSize) + ((numWeeks - 1) * buttonVerticalSpacing) + (2 * verticalPadding)
+                
                 delegate: RippleButton {
                     id: dayButton
                     required property var model
