@@ -53,4 +53,13 @@ if status is-interactive
             command nix-shell $argv
         end
     end
+
+    # Automatically fetch remote git changes in the background when entering a directory
+    function __auto_git_fetch --on-variable PWD
+        if git rev-parse --is-inside-work-tree >/dev/null 2>&1
+            command git fetch --quiet >/dev/null 2>&1 &
+        end
+    end
+    __auto_git_fetch
 end
+
