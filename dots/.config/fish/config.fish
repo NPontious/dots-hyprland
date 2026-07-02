@@ -105,7 +105,16 @@ if status is-interactive
             end
         end
 
-        if test -f "$target"
+        set -l planet_file ~/.config/terminal/(string lower "$target")-sequences.txt
+        if test -f "$planet_file"
+            set target "$planet_file"
+        end
+
+        if string match -r '\.txt$' -i -- "$target" >/dev/null; and test -f "$target"
+            cp "$target" $state_dir/terminal/sequences.txt
+            cat $state_dir/terminal/sequences.txt
+            return 0
+        else if test -f "$target"
             matugen image "$target" $extra_args
             $py_cmd $script_dir/generate_colors_material.py --path "$target" --termscheme $script_dir/terminal/scheme-base.json --blend_bg_fg --cache $state_dir/color.txt > $state_dir/material_colors.scss
         else if string match -r '\.(jpe?g|png|webp|gif|bmp|tiff?)$' -i -- $target >/dev/null
@@ -115,7 +124,7 @@ if status is-interactive
             matugen color hex "$target" $extra_args
             $py_cmd $script_dir/generate_colors_material.py --color "$target" --termscheme $script_dir/terminal/scheme-base.json --blend_bg_fg --cache $state_dir/color.txt > $state_dir/material_colors.scss
         else
-            echo "Error: '$target' is not a valid file path, web URL, or hex color."
+            echo "Error: '$target' is not a valid file path, web URL, planet name, or hex color."
             return 1
         end
 
