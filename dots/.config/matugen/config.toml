@@ -32,3 +32,8 @@ output_path = '~/.local/state/quickshell/user/generated/color.txt'
 [templates.wallpaper]
 input_path = '~/.config/matugen/templates/wallpaper.txt'
 output_path = '~/.local/state/quickshell/user/generated/wallpaper/path.txt'
+
+[templates.headless_terminal]
+input_path = '~/.config/matugen/templates/terminal-sequences.txt'
+output_path = '~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt'
+

@@ -15,6 +15,8 @@ if status is-interactive
     # Colors
     if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
         cat ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+    else if test -f ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
+        cat ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
     end
 
     # Aliases
@@ -30,6 +32,8 @@ if status is-interactive
     function restore_host_colors
         if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
             cat ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+        else if test -f ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
+            cat ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
         end
     end
 
@@ -61,5 +65,21 @@ if status is-interactive
         end
     end
     __auto_git_fetch
+
+    # Helper command to generate and apply Material You shell colors from hex code on headless machines
+    function settheme --description "Set headless shell theme from hex color"
+        if test (count $argv) -eq 0
+            echo "Usage: settheme <hex-color> (e.g., settheme '#8caaee')"
+            return 1
+        end
+        if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+            echo "Note: GUI environment detected. For best results on desktop, use 'switchwall.sh --color <hex>' instead."
+            return 1
+        end
+        matugen color hex $argv[1]
+        if test -f ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
+            cat ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
+        end
+    end
 end
 
