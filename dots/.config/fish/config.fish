@@ -66,23 +66,19 @@ if status is-interactive
     end
     __auto_git_fetch
 
-    # Helper command to generate and apply Material You shell colors from hex code, image path, or web image URL on headless machines
-    function settheme --description "Set headless shell theme from hex color, image file, or web URL"
+    # Helper command to generate and apply full 16-color shell themes from hex code, image path, or web URL
+    function settheme --description "Set shell theme from hex color, image file, or web URL"
         if test (count $argv) -eq 0
-            echo "Usage: settheme <hex-color | image-path | image-url> [matugen-options...]"
-            echo "Examples:"
-            echo "  settheme '#8caaee'"
-            echo "  settheme https://example.com/desolo.png --type scheme-expressive"
-            echo "  settheme ~/Pictures/wallpaper.png"
-            return 1
-        end
-        if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
-            echo "Note: GUI environment detected. For best results on desktop, use 'switchwall.sh' instead."
+            echo "Usage: settheme <hex-color | image-path | image-url> [options...]"
             return 1
         end
 
         set -l target $argv[1]
         set -l extra_args $argv[2..-1]
+        set -l script_dir ~/.config/quickshell/ii/scripts/colors
+        set -l state_dir ~/.local/state/quickshell/user/generated
+
+        mkdir -p $state_dir/terminal
 
         if string match -r '^https?://' -- $target >/dev/null
             echo "Downloading image from $target..."
@@ -94,25 +90,30 @@ if status is-interactive
                 wget -q "$target" -O "$cache_img"
             end
             if test -s "$cache_img"
-                matugen image "$cache_img" $extra_args
+                set target "$cache_img"
             else
                 echo "Error: Failed to download image from URL."
                 return 1
             end
-        else if test -f "$target"
+        end
+
+        if test -f "$target"
             matugen image "$target" $extra_args
+            python3 $script_dir/generate_colors_material.py --path "$target" --termscheme $script_dir/terminal/scheme-base.json --blend_bg_fg --cache $state_dir/color.txt > $state_dir/material_colors.scss
         else if string match -r '\.(jpe?g|png|webp|gif|bmp|tiff?)$' -i -- $target >/dev/null
             echo "Error: Image file '$target' not found."
             return 1
         else if string match -r '^#?[0-9a-fA-F]{3,8}$' -- $target >/dev/null
             matugen color hex "$target" $extra_args
+            python3 $script_dir/generate_colors_material.py --color "$target" --termscheme $script_dir/terminal/scheme-base.json --blend_bg_fg --cache $state_dir/color.txt > $state_dir/material_colors.scss
         else
             echo "Error: '$target' is not a valid file path, web URL, or hex color."
             return 1
         end
 
-        if test -f ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
-            cat ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
+        bash $script_dir/applycolor.sh
+        if test -f $state_dir/terminal/sequences.txt
+            cat $state_dir/terminal/sequences.txt
         end
     end
 end
