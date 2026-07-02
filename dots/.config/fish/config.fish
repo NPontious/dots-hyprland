@@ -17,6 +17,23 @@ if status is-interactive
         cat ~/.local/state/quickshell/user/generated/terminal/sequences.txt
     else if test -f ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
         cat ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
+    else
+        set -l h (hostname | string lower)
+        if test -f ~/.config/terminal/$h-sequences.txt
+            cat ~/.config/terminal/$h-sequences.txt
+        end
+    end
+
+    function ssh
+        command ssh $argv
+        if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+            cat ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+        else
+            set -l h (hostname | string lower)
+            if test -f ~/.config/terminal/$h-sequences.txt
+                cat ~/.config/terminal/$h-sequences.txt
+            end
+        end
     end
 
     # Aliases
@@ -105,9 +122,11 @@ if status is-interactive
             end
         end
 
-        set -l planet_file ~/.config/terminal/(string lower "$target")-sequences.txt
-        if test -f "$planet_file"
-            set target "$planet_file"
+        set -l planet_name (string lower "$target")
+        if test -f ~/.config/terminal/$planet_name-sequences.txt
+            set target ~/.config/terminal/$planet_name-sequences.txt
+        else if test -f /home/nicho/Documents/GitHub/iiClone/mine/dots-hyprland/dots/.config/terminal/$planet_name-sequences.txt
+            set target /home/nicho/Documents/GitHub/iiClone/mine/dots-hyprland/dots/.config/terminal/$planet_name-sequences.txt
         end
 
         if string match -r '\.txt$' -i -- "$target" >/dev/null; and test -f "$target"
