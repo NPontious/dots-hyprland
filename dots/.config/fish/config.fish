@@ -97,15 +97,20 @@ if status is-interactive
             end
         end
 
+        set -l py_cmd python3
+        if test -x ~/.local/state/quickshell/.venv/bin/python3
+            set py_cmd ~/.local/state/quickshell/.venv/bin/python3
+        end
+
         if test -f "$target"
             matugen image "$target" $extra_args
-            python3 $script_dir/generate_colors_material.py --path "$target" --termscheme $script_dir/terminal/scheme-base.json --blend_bg_fg --cache $state_dir/color.txt > $state_dir/material_colors.scss
+            $py_cmd $script_dir/generate_colors_material.py --path "$target" --termscheme $script_dir/terminal/scheme-base.json --blend_bg_fg --cache $state_dir/color.txt > $state_dir/material_colors.scss
         else if string match -r '\.(jpe?g|png|webp|gif|bmp|tiff?)$' -i -- $target >/dev/null
             echo "Error: Image file '$target' not found."
             return 1
         else if string match -r '^#?[0-9a-fA-F]{3,8}$' -- $target >/dev/null
             matugen color hex "$target" $extra_args
-            python3 $script_dir/generate_colors_material.py --color "$target" --termscheme $script_dir/terminal/scheme-base.json --blend_bg_fg --cache $state_dir/color.txt > $state_dir/material_colors.scss
+            $py_cmd $script_dir/generate_colors_material.py --color "$target" --termscheme $script_dir/terminal/scheme-base.json --blend_bg_fg --cache $state_dir/color.txt > $state_dir/material_colors.scss
         else
             echo "Error: '$target' is not a valid file path, web URL, or hex color."
             return 1
