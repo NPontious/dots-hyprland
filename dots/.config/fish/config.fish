@@ -101,8 +101,14 @@ if status is-interactive
             end
         else if test -f "$target"
             matugen image "$target" $extra_args
-        else
+        else if string match -r '\.(jpe?g|png|webp|gif|bmp|tiff?)$' -i -- $target >/dev/null
+            echo "Error: Image file '$target' not found."
+            return 1
+        else if string match -r '^#?[0-9a-fA-F]{3,8}$' -- $target >/dev/null
             matugen color hex "$target" $extra_args
+        else
+            echo "Error: '$target' is not a valid file path, web URL, or hex color."
+            return 1
         end
 
         if test -f ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
