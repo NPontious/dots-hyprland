@@ -138,17 +138,36 @@ if args.termscheme is not None:
     term_source_colors = json.loads(json_termscheme)['dark' if darkmode else 'light']
 
     primary_hex = material_colors.get('primary_paletteKeyColor', material_colors.get('primaryPaletteKeyColor', material_colors.get('primary', '#8caaee')))
-    primary_color_argb = hex_to_argb(primary_hex)
+    secondary_hex = material_colors.get('secondary_paletteKeyColor', material_colors.get('secondaryPaletteKeyColor', material_colors.get('secondary', primary_hex)))
+    tertiary_hex = material_colors.get('tertiary_paletteKeyColor', material_colors.get('tertiaryPaletteKeyColor', material_colors.get('tertiary', primary_hex)))
+    
+    primary_argb = hex_to_argb(primary_hex)
+    secondary_argb = hex_to_argb(secondary_hex)
+    tertiary_argb = hex_to_argb(tertiary_hex)
+
     for color, val in term_source_colors.items():
         if(args.scheme == 'monochrome') :
             term_colors[color] = val
             continue
         if args.blend_bg_fg and color == "term0":
-            harmonized = boost_chroma_tone(hex_to_argb(material_colors['surfaceContainerLow']), 1.2, 0.95)
+            harmonized = harmonize(hex_to_argb(val), primary_argb, 180, 0.9)
+        elif args.blend_bg_fg and color == "term7":
+            harmonized = harmonize(hex_to_argb(val), primary_argb, 180, 0.1)
+        elif args.blend_bg_fg and color == "term8":
+            harmonized = harmonize(hex_to_argb(val), secondary_argb, 180, 0.3)
         elif args.blend_bg_fg and color == "term15":
-            harmonized = boost_chroma_tone(hex_to_argb(material_colors['onSurface']), 3, 1)
+            harmonized = harmonize(hex_to_argb(val), primary_argb, 180, 0.05)
+        elif color in ["term3", "term11", "term1", "term9"]:
+            # Yellows and reds draw from primary accent
+            harmonized = harmonize(hex_to_argb(val), primary_argb, args.harmonize_threshold, min(args.harmony, 0.45))
+        elif color in ["term4", "term12", "term6", "term14"]:
+            # Blues and cyans draw from secondary accent (bluish-grey tones)
+            harmonized = harmonize(hex_to_argb(val), secondary_argb, args.harmonize_threshold, min(args.harmony, 0.45))
+        elif color in ["term5", "term13", "term2", "term10"]:
+            # Magentas and greens draw from tertiary accent
+            harmonized = harmonize(hex_to_argb(val), tertiary_argb, args.harmonize_threshold, min(args.harmony, 0.45))
         else:
-            harmonized = harmonize(hex_to_argb(val), primary_color_argb, args.harmonize_threshold, args.harmony)
+            harmonized = harmonize(hex_to_argb(val), primary_argb, args.harmonize_threshold, min(args.harmony, 0.45))
             harmonized = boost_chroma_tone(harmonized, 1, 1 + (args.term_fg_boost * (1 if darkmode else -1)))
         term_colors[color] = argb_to_hex(harmonized)
 
