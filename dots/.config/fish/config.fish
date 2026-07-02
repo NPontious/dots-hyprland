@@ -98,8 +98,11 @@ if status is-interactive
         end
 
         set -l py_cmd python3
-        if test -x ~/.local/state/quickshell/.venv/bin/python3
-            set py_cmd ~/.local/state/quickshell/.venv/bin/python3
+        for py in ~/.local/state/quickshell/.venv/bin/python3 $ILLOGICAL_IMPULSE_VIRTUAL_ENV/bin/python3 python3
+            if test -x "$py"; and "$py" -c "import PIL, materialyoucolor" >/dev/null 2>&1
+                set py_cmd "$py"
+                break
+            end
         end
 
         if test -f "$target"
