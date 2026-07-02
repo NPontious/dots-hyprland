@@ -66,17 +66,45 @@ if status is-interactive
     end
     __auto_git_fetch
 
-    # Helper command to generate and apply Material You shell colors from hex code on headless machines
-    function settheme --description "Set headless shell theme from hex color"
+    # Helper command to generate and apply Material You shell colors from hex code, image path, or web image URL on headless machines
+    function settheme --description "Set headless shell theme from hex color, image file, or web URL"
         if test (count $argv) -eq 0
-            echo "Usage: settheme <hex-color> (e.g., settheme '#8caaee')"
+            echo "Usage: settheme <hex-color | image-path | image-url> [matugen-options...]"
+            echo "Examples:"
+            echo "  settheme '#8caaee'"
+            echo "  settheme https://example.com/desolo.png --type scheme-expressive"
+            echo "  settheme ~/Pictures/wallpaper.png"
             return 1
         end
         if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
-            echo "Note: GUI environment detected. For best results on desktop, use 'switchwall.sh --color <hex>' instead."
+            echo "Note: GUI environment detected. For best results on desktop, use 'switchwall.sh' instead."
             return 1
         end
-        matugen color hex $argv[1]
+
+        set -l target $argv[1]
+        set -l extra_args $argv[2..-1]
+
+        if string match -r '^https?://' -- $target >/dev/null
+            echo "Downloading image from $target..."
+            mkdir -p ~/.cache
+            set -l cache_img ~/.cache/settheme_downloaded_image
+            if command -v curl >/dev/null
+                curl -sSL "$target" -o "$cache_img"
+            else
+                wget -q "$target" -O "$cache_img"
+            end
+            if test -s "$cache_img"
+                matugen image "$cache_img" $extra_args
+            else
+                echo "Error: Failed to download image from URL."
+                return 1
+            end
+        else if test -f "$target"
+            matugen image "$target" $extra_args
+        else
+            matugen color hex "$target" $extra_args
+        end
+
         if test -f ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
             cat ~/.local/state/quickshell/user/generated/terminal/headless-sequences.txt
         end
