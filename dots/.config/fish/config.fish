@@ -78,7 +78,7 @@ if status is-interactive
     # Automatically fetch remote git changes in the background when entering a directory
     function __auto_git_fetch --on-variable PWD
         if git rev-parse --is-inside-work-tree >/dev/null 2>&1
-            command git fetch --quiet >/dev/null 2>&1 &
+            command sh -c "git fetch --quiet >/dev/null 2>&1; kill -WINCH $fish_pid" &
         end
     end
     __auto_git_fetch
