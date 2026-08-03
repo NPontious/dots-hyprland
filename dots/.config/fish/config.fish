@@ -44,7 +44,7 @@ if status is-interactive
     alias pamcan pacman
     alias q 'qs -c ii'
     if test "$TERM" != "linux"
-        alias ls 'eza --icons'
+        alias ls 'eza --icons=auto'
     end
     function restore_host_colors
         if test -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt
