@@ -119,6 +119,9 @@ Singleton {
             }
             if (exitCode !== 2) {
                 root.loaded = true;
+            } else {
+                console.error("[KeyringStorage] Keyring locked or missing. Proceeding with empty data.");
+                root.loaded = true;
             }
         }
     }
