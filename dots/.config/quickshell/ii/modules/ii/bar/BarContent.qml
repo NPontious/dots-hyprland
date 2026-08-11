@@ -290,7 +290,7 @@ Item { // Bar content region
                         color: rightSidebarButton.colText
                     }
                     Revealer {
-                        reveal: Notifications.silent || Notifications.unread > 0
+                        reveal: !Notifications.silent || Notifications.unread > 0
                         Layout.fillHeight: true
                         Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
                         implicitHeight: reveal ? notificationUnreadCount.implicitHeight : 0

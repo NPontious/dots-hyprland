@@ -260,7 +260,7 @@ Item { // Bar content region
                     }
                     Revealer {
                         vertical: true
-                        reveal: Notifications.silent || Notifications.unread > 0
+                        reveal: !Notifications.silent || Notifications.unread > 0
                         Layout.fillWidth: true
                         Layout.bottomMargin: reveal ? indicatorsColumnLayout.realSpacing : 0
                         implicitHeight: reveal ? notificationUnreadCount.implicitHeight : 0

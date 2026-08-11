@@ -38,9 +38,9 @@ BarButton {
                 }
             }
             FluentIcon {
-                visible: Notifications.silent
+                visible: !Notifications.silent
                 anchors.verticalCenter: parent.verticalCenter
-                icon: "alert-snooze"
+                icon: "alert"
                 implicitSize: 18
                 filled: true
             }

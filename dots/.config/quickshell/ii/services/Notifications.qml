@@ -169,7 +169,8 @@ Singleton {
 			root.list = [...root.list, newNotifObject];
 
             // Popup
-            if (!root.popupInhibited) {
+            const isBatteryWarning = notification.appName.toLowerCase().includes("power") || notification.summary.toLowerCase().includes("battery");
+            if (!root.popupInhibited || isBatteryWarning) {
                 newNotifObject.popup = true;
                 if (notification.expireTimeout != 0) {
                     newNotifObject.timer = notifTimerComponent.createObject(root, {
