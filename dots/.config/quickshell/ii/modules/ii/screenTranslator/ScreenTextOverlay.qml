@@ -8,8 +8,7 @@ import Quickshell
 import qs
 import qs.modules.common
 import qs.modules.common.functions
-import qs.modules.common.models.gCloud // Need this for GCloudApi.State
-import qs.modules.common.models.local
+import qs.modules.common.models.gCloud
 import qs.modules.common.utils
 import qs.modules.common.widgets
 import qs.services
@@ -41,7 +40,24 @@ Item {
     }
 
     Component.onCompleted: {
-        localVision.annotateImage(screenshotPath);
+        if (GoogleCloud.tokenReady && GoogleCloud.tokenError) {
+            root.showError();
+        }
+        cloudVision.annotateImage(screenshotPath);
+    }
+
+    function reattemptAsNeeded() {
+        if (root.visionParagraphs == [] && GoogleCloud.tokenReady && !GoogleCloud.tokenError) {
+            root.error = false;
+            cloudVision.annotateImage(root.screenshotPath);
+        }
+    }
+
+    Connections {
+        target: GoogleCloud
+        function onTokenReadyChanged() {
+            root.reattemptAsNeeded();
+        }
     }
 
     Rectangle {
@@ -65,15 +81,15 @@ Item {
             StyledText {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: {
-                    if (localVision.state == GCloudApi.State.Preparing)
+                    if (cloudVision.state == GCloudApi.State.Preparing)
                         return Translation.tr("Uploading image");
-                    else if (localVision.state == GCloudApi.State.Processing)
+                    else if (cloudVision.state == GCloudApi.State.Processing)
                         return Translation.tr("Reading image");
-                    else if (localVision.state == GCloudApi.State.Error)
+                    else if (cloudVision.state == GCloudApi.State.Error)
                         return Translation.tr("Error");
-                    else if (localTrans.state == GCloudApi.State.Preparing)
+                    else if (cloudTrans.state == GCloudApi.State.Preparing)
                         return Translation.tr("Getting ready to translate");
-                    else if (localTrans.state == GCloudApi.State.Processing)
+                    else if (cloudTrans.state == GCloudApi.State.Processing)
                         return Translation.tr("Translating");
                     else
                         return " ";
@@ -117,26 +133,33 @@ Item {
         }
     }
 
+    GCloudVisionResult {
+        id: gcr
+    }
+
     function handleError(msg) {
         if (msg?.length > 0) root.errorMessage = msg;
-        else root.errorMessage = Translation.tr("Error running local OCR/Translate");
+        else root.errorMessage = Translation.tr("Set your Google Cloud service account key");
         root.showError();
     }
 
-    LocalVision {
-        id: localVision
+    GCloudVision {
+        id: cloudVision
         onError: (msg) => {
             root.handleError(msg);
         }
         onFinished: {
-            root.visionParagraphs = outputData;
-            root.translationKeys = root.visionParagraphs.map(p => p.text);
-            localTrans.translateStrings(root.translationKeys);
+            gcr.initializeWithData(outputData);
+            root.visionParagraphs = gcr.coherentParagraphs;
+            // print(gcr.coherentParagraphs)
+            root.translationKeys = gcr.coherentParagraphs.map(p => p.text);
+            // print("TRANSLATION KEYS:", JSON.stringify(root.translationKeys));
+            cloudTrans.translateStrings(root.translationKeys);
         }
     }
 
-    LocalTranslate {
-        id: localTrans
+    GCloudTranslate {
+        id: cloudTrans
         onError: (msg) => {
             root.handleError(msg);
         }
@@ -149,6 +172,7 @@ Item {
                     [keys[i]]: values[i]
                 });
             }
+            // print("TRANSLATION:", JSON.stringify(root.translation));
             root.loading = false;
         }
     }
