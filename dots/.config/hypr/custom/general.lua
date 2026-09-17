@@ -10,7 +10,7 @@ if ok then
         -- 10 workspaces per monitor (matches Quickshell shownCount = 10)
         workspace_count = 10,
         keep_focused = true,
-        enable_persistent_workspaces = true,
+        enable_persistent_workspaces = false,
         enable_wrapping = true,
         enable_notifications = false,
         -- monitor_priority = { "DP-1", "HDMI-A-1" }, -- Optional: customize monitor order
