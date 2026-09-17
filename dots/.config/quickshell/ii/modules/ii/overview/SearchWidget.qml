@@ -39,13 +39,11 @@ Item { // Wrapper
     function cancelSearch() {
         searchBar.searchInput.deselect();
         searchBar.searchInput.text = "";
-        root.searchingText = "";
         LauncherSearch.query = "";
         searchBar.animateWidth = true;
     }
 
     function setSearchingText(text) {
-        root.searchingText = text;
         searchBar.searchInput.text = text;
         LauncherSearch.query = text;
     }
@@ -190,7 +188,7 @@ Item { // Wrapper
 
                 function updateResults() {
                     const results = LauncherSearch.results ?? [];
-                    if (results.length === 0 || root.searchingText === "") {
+                    if (results.length === 0 || LauncherSearch.query === "") {
                         debounceTimer.stop();
                         resultModel.values = [];
                     } else if (resultModel.values.length === 0) {
