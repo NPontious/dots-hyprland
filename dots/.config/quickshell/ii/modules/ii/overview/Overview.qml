@@ -46,8 +46,11 @@ Scope {
                     searchWidget.disableExpandAnimation();
                     overviewScope.dontAutoCancelSearch = false;
                     GlobalFocusGrab.dismiss();
+                    panelWindow.searchingText = "";
+                    searchWidget.cancelSearch();
                 } else {
                     if (!overviewScope.dontAutoCancelSearch) {
+                        panelWindow.searchingText = "";
                         searchWidget.cancelSearch();
                     }
                     GlobalFocusGrab.addDismissable(panelWindow);
@@ -65,6 +68,7 @@ Scope {
         implicitHeight: columnLayout.implicitHeight
 
         function setSearchingText(text) {
+            panelWindow.searchingText = text;
             searchWidget.setSearchingText(text);
             searchWidget.focusFirstItem();
         }

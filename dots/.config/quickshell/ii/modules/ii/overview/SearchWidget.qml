@@ -39,11 +39,13 @@ Item { // Wrapper
     function cancelSearch() {
         searchBar.searchInput.deselect();
         searchBar.searchInput.text = "";
+        root.searchingText = "";
         LauncherSearch.query = "";
         searchBar.animateWidth = true;
     }
 
     function setSearchingText(text) {
+        root.searchingText = text;
         searchBar.searchInput.text = text;
         LauncherSearch.query = text;
     }
@@ -176,39 +178,43 @@ Item { // Wrapper
                         appResults.currentIndex = 1;
                 }
 
-                Connections {
-                    target: root
-                    function onSearchingTextChanged() {
-                        if (appResults.count > 0)
-                            appResults.currentIndex = 0;
-                    }
-                }
-
                 Timer {
                     id: debounceTimer
                     interval: 80
                     repeat: false
                     onTriggered: {
-                        resultModel.values = (LauncherSearch.results ?? []).slice(0, root.typingResultLimit);
+                        resultModel.values = LauncherSearch.results ?? [];
                         root.focusFirstItem();
+                    }
+                }
+
+                function updateResults() {
+                    const results = LauncherSearch.results ?? [];
+                    if (results.length === 0 || root.searchingText === "") {
+                        debounceTimer.stop();
+                        resultModel.values = [];
+                    } else if (resultModel.values.length === 0) {
+                        resultModel.values = results.slice(0, root.typingResultLimit);
+                        root.focusFirstItem();
+                        debounceTimer.restart();
+                    } else {
+                        debounceTimer.restart();
                     }
                 }
 
                 Connections {
                     target: LauncherSearch
                     function onResultsChanged() {
-                        const results = LauncherSearch.results ?? [];
-                        if (results.length === 0 || root.searchingText === "") {
-                            debounceTimer.stop();
-                            resultModel.values = [];
-                        } else if (resultModel.values.length === 0) {
-                            // Display first result immediately so first keystroke has 0ms latency
-                            resultModel.values = results.slice(0, root.typingResultLimit);
-                            root.focusFirstItem();
-                        } else {
-                            // Debounce subsequent rapid keystrokes to prevent main thread frame drops
-                            debounceTimer.restart();
-                        }
+                        appResults.updateResults();
+                    }
+                }
+
+                Connections {
+                    target: root
+                    function onSearchingTextChanged() {
+                        if (appResults.count > 0)
+                            appResults.currentIndex = 0;
+                        appResults.updateResults();
                     }
                 }
 
