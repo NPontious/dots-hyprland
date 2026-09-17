@@ -174,7 +174,7 @@ Singleton {
         if (root.query.startsWith(Config.options.search.prefix.clipboard)) {
             // Clipboard
             const searchString = StringUtils.cleanPrefix(root.query, Config.options.search.prefix.clipboard);
-            return Cliphist.fuzzyQuery(searchString).map((entry, index, array) => {
+            return Cliphist.fuzzyQuery(searchString).slice(0, 40).map((entry, index, array) => {
                 const mightBlurImage = Cliphist.entryIsImage(entry) && root.clipboardWorkSafetyActive;
                 let shouldBlurImage = mightBlurImage;
                 if (mightBlurImage) {

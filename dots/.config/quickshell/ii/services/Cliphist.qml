@@ -16,13 +16,13 @@ Singleton {
     property bool sloppySearch: Config.options?.search.sloppy ?? false
     property real scoreThreshold: 0.2
     property list<string> entries: []
-    readonly property var preparedEntries: entries.map(a => ({
+    readonly property var preparedEntries: entries.slice(0, 300).map(a => ({
         name: Fuzzy.prepare(`${a.replace(/^\s*\S+\s+/, "")}`),
         entry: a
     }))
     function fuzzyQuery(search: string): var {
         if (search.trim() === "") {
-            return entries;
+            return entries.slice(0, 50);
         }
         if (root.sloppySearch) {
             const results = entries.slice(0, 100).map(str => ({
