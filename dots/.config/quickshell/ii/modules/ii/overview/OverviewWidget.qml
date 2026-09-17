@@ -14,31 +14,37 @@ import Quickshell.Hyprland
 Item {
     id: root
     required property var screen
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(screen)
+    readonly property HyprlandMonitor monitor: (root.screen ? Hyprland.monitorFor(root.screen) : null) ?? Hyprland.focusedMonitor
     readonly property var toplevels: ToplevelManager.toplevels
     // Clamp to avoid lock-screen temp workspace (2147483647 - N) leaking into UI
     readonly property int effectiveActiveWorkspaceId: Math.max(1, Math.min(100, monitor?.activeWorkspace?.id ?? 1))
-    readonly property int workspacesShown: Config.options.overview.rows * Config.options.overview.columns
+    readonly property int workspacesShown: Math.max(1, (Config.options?.overview?.rows ?? 2) * (Config.options?.overview?.columns ?? 5))
     readonly property int workspaceGroup: Math.floor((effectiveActiveWorkspaceId - 1) / workspacesShown)
-    property bool monitorIsFocused: (Hyprland.focusedMonitor?.name == monitor.name)
+    property bool monitorIsFocused: (Hyprland.focusedMonitor?.name == monitor?.name)
     property var windows: HyprlandData.windowList
     property var windowByAddress: HyprlandData.windowByAddress
     property var windowAddresses: HyprlandData.addresses
-    property var monitorData: HyprlandData.monitors.find(m => m.id === root.monitor?.id)
-    property real scale: Config.options.overview.scale
+    property var monitorData: HyprlandData.monitors.find(m => m.id === root.monitor?.id) ?? HyprlandData.monitors[0]
+    property real scale: Config.options?.overview?.scale ?? 0.12
     property color activeBorderColor: Appearance.colors.colSecondary
 
-    property real workspaceImplicitWidth: (monitorData?.transform % 2 === 1) ? 
-        ((monitor.height - monitorData?.reserved[0] - monitorData?.reserved[2]) * root.scale / monitor.scale) :
-        ((monitor.width - monitorData?.reserved[0] - monitorData?.reserved[2]) * root.scale / monitor.scale)
-    property real workspaceImplicitHeight: (monitorData?.transform % 2 === 1) ? 
-        ((monitor.width - monitorData?.reserved[1] - monitorData?.reserved[3]) * root.scale / monitor.scale) :
-        ((monitor.height - monitorData?.reserved[1] - monitorData?.reserved[3]) * root.scale / monitor.scale)
+    readonly property real monWidth: monitor?.width ?? monitorData?.width ?? 1920
+    readonly property real monHeight: monitor?.height ?? monitorData?.height ?? 1080
+    readonly property real monScale: (monitor?.scale && monitor.scale > 0) ? monitor.scale : ((monitorData?.scale && monitorData.scale > 0) ? monitorData.scale : 1)
+    readonly property real reservedX: (monitorData?.reserved && monitorData.reserved.length >= 4) ? (monitorData.reserved[0] + monitorData.reserved[2]) : 0
+    readonly property real reservedY: (monitorData?.reserved && monitorData.reserved.length >= 4) ? (monitorData.reserved[1] + monitorData.reserved[3]) : 0
+
+    property real workspaceImplicitWidth: Math.max(100, (monitorData?.transform % 2 === 1) ? 
+        ((monHeight - reservedX) * root.scale / monScale) :
+        ((monWidth - reservedX) * root.scale / monScale))
+    property real workspaceImplicitHeight: Math.max(100, (monitorData?.transform % 2 === 1) ? 
+        ((monWidth - reservedY) * root.scale / monScale) :
+        ((monHeight - reservedY) * root.scale / monScale))
     property real largeWorkspaceRadius: Appearance.rounding.large
     property real smallWorkspaceRadius: Appearance.rounding.verysmall
 
     property real workspaceNumberMargin: 80
-    property real workspaceNumberSize: 250 * monitor.scale
+    property real workspaceNumberSize: 250 * monScale
     property int workspaceZ: 0
     property int windowZ: 1
     property int windowDraggingZ: 99999
@@ -187,24 +193,24 @@ Item {
                 delegate: OverviewWindow {
                     id: window
                     required property var modelData
-                    property int monitorId: windowData?.monitor
-                    property var monitor: HyprlandData.monitors.find(m => m.id == monitorId)
-                    property var address: `0x${modelData.HyprlandToplevel.address}`
+                    property int monitorId: windowData?.monitor ?? -1
+                    property var monitor: HyprlandData.monitors.find(m => m.id == monitorId) ?? root.monitorData
+                    property var address: `0x${modelData.HyprlandToplevel?.address}`
                     toplevel: modelData
                     monitorData: this.monitor
                     scale: root.scale
-                    widgetMonitor: HyprlandData.monitors.find(m => m.id == root.monitor.id)
+                    widgetMonitor: HyprlandData.monitors.find(m => m.id == root.monitor?.id) ?? root.monitorData
                     windowData: windowByAddress[address]
 
                     property bool atInitPosition: (initX == x && initY == y)
 
                     // Offset on the canvas
-                    property int workspaceColIndex: getWsColumn(windowData?.workspace.id)
-                    property int workspaceRowIndex: getWsRow(windowData?.workspace.id)
+                    property int workspaceColIndex: getWsColumn(windowData?.workspace?.id ?? 1)
+                    property int workspaceRowIndex: getWsRow(windowData?.workspace?.id ?? 1)
                     xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex
                     yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex
-                    property real xWithinWorkspaceWidget: Math.max((windowData?.at[0] - (monitor?.x ?? 0) - monitorData?.reserved[0]) * root.scale, 0)
-                    property real yWithinWorkspaceWidget: Math.max((windowData?.at[1] - (monitor?.y ?? 0) - monitorData?.reserved[1]) * root.scale, 0)
+                    property real xWithinWorkspaceWidget: Math.max((((windowData?.at && windowData.at.length > 0) ? windowData.at[0] : 0) - (monitor?.x ?? 0) - ((monitorData?.reserved && monitorData.reserved.length > 0) ? monitorData.reserved[0] : 0)) * root.scale, 0)
+                    property real yWithinWorkspaceWidget: Math.max((((windowData?.at && windowData.at.length > 1) ? windowData.at[1] : 0) - (monitor?.y ?? 0) - ((monitorData?.reserved && monitorData.reserved.length > 1) ? monitorData.reserved[1] : 0)) * root.scale, 0)
 
                     // Radius
                     property real minRadius: Appearance.rounding.small
@@ -276,7 +282,9 @@ Item {
                                 }
                                 const percentageX = (window.x - xOffset) / root.workspaceImplicitWidth
                                 const percentageY = (window.y - yOffset) / root.workspaceImplicitHeight
-                                Hyprland.dispatch(`hl.dsp.window.move({ x = "${percentageX * root.screen.width}", y = "${percentageY * root.screen.height}", window = "address:${window.windowData?.address}" })`)
+                                const screenW = root.screen?.width ?? root.monWidth
+                                const screenH = root.screen?.height ?? root.monHeight
+                                Hyprland.dispatch(`hl.dsp.window.move({ x = "${percentageX * screenW}", y = "${percentageY * screenH}", window = "address:${window.windowData?.address}" })`)
                             }
                         }
                         onClicked: (event) => {

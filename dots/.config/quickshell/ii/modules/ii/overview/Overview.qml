@@ -17,8 +17,9 @@ Scope {
 
     PanelWindow {
         id: panelWindow
+        screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0] ?? null
         property string searchingText: ""
-        readonly property HyprlandMonitor monitor: Hyprland.monitorFor(panelWindow.screen)
+        readonly property HyprlandMonitor monitor: (panelWindow.screen ? Hyprland.monitorFor(panelWindow.screen) : null) ?? Hyprland.focusedMonitor
         property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor?.id)
         visible: GlobalStates.overviewOpen
 
@@ -96,7 +97,7 @@ Scope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 active: GlobalStates.overviewOpen && (Config?.options.overview.enable ?? true)
                 sourceComponent: OverviewWidget {
-                    screen: panelWindow.screen
+                    screen: panelWindow.screen ?? Quickshell.screens[0] ?? null
                     visible: (panelWindow.searchingText == "")
                 }
             }

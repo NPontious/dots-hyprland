@@ -18,29 +18,39 @@ Item { // Window
     property var scale
     property bool restrictToWorkspace: true
     property real widthRatio: {
-        const widgetWidth = widgetMonitor.transform & 1 ? widgetMonitor.height : widgetMonitor.width;
-        const monitorWidth = monitorData.transform & 1 ? monitorData.height : monitorData.width;
-        return (widgetWidth * monitorData.scale) / (monitorWidth * widgetMonitor.scale);
+        if (!widgetMonitor || !monitorData) return 1.0;
+        const widgetWidth = (widgetMonitor.transform & 1) ? widgetMonitor.height : widgetMonitor.width;
+        const monitorWidth = (monitorData.transform & 1) ? monitorData.height : monitorData.width;
+        const wScale = widgetMonitor.scale > 0 ? widgetMonitor.scale : 1;
+        const mScale = monitorData.scale > 0 ? monitorData.scale : 1;
+        return (monitorWidth && wScale) ? ((widgetWidth * mScale) / (monitorWidth * wScale)) : 1.0;
     }
     property real heightRatio: {
-        const widgetHeight = widgetMonitor.transform & 1 ? widgetMonitor.width : widgetMonitor.height;
-        const monitorHeight = monitorData.transform & 1 ? monitorData.width : monitorData.height;
-        return (widgetHeight * monitorData.scale) / (monitorHeight * widgetMonitor.scale);
+        if (!widgetMonitor || !monitorData) return 1.0;
+        const widgetHeight = (widgetMonitor.transform & 1) ? widgetMonitor.width : widgetMonitor.height;
+        const monitorHeight = (monitorData.transform & 1) ? monitorData.width : monitorData.height;
+        const wScale = widgetMonitor.scale > 0 ? widgetMonitor.scale : 1;
+        const mScale = monitorData.scale > 0 ? monitorData.scale : 1;
+        return (monitorHeight && wScale) ? ((widgetHeight * mScale) / (monitorHeight * wScale)) : 1.0;
     }
     property real initX: {
-        return Math.max((windowData?.at[0] - (monitorData?.x ?? 0) - monitorData?.reserved[0]) * widthRatio * root.scale, 0) + xOffset;
+        const res0 = (monitorData?.reserved && monitorData.reserved.length > 0) ? monitorData.reserved[0] : 0;
+        const winX = (windowData?.at && windowData.at.length > 0) ? windowData.at[0] : 0;
+        return Math.max((winX - (monitorData?.x ?? 0) - res0) * widthRatio * (root.scale ?? 1), 0) + xOffset;
     }
 
     property real initY: {
-        return Math.max((windowData?.at[1] - (monitorData?.y ?? 0) - monitorData?.reserved[1]) * heightRatio * root.scale, 0) + yOffset;
+        const res1 = (monitorData?.reserved && monitorData.reserved.length > 1) ? monitorData.reserved[1] : 0;
+        const winY = (windowData?.at && windowData.at.length > 1) ? windowData.at[1] : 0;
+        return Math.max((winY - (monitorData?.y ?? 0) - res1) * heightRatio * (root.scale ?? 1), 0) + yOffset;
     }
     property real xOffset: 0
     property real yOffset: 0
     property var widgetMonitor
-    property int widgetMonitorId: widgetMonitor.id
+    property int widgetMonitorId: widgetMonitor?.id ?? 0
 
-    property var targetWindowWidth: windowData?.size[0] * scale * widthRatio
-    property var targetWindowHeight: windowData?.size[1] * scale * heightRatio
+    property var targetWindowWidth: ((windowData?.size && windowData.size.length > 0) ? windowData.size[0] : 0) * (scale ?? 1) * widthRatio
+    property var targetWindowHeight: ((windowData?.size && windowData.size.length > 1) ? windowData.size[1] : 0) * (scale ?? 1) * heightRatio
     property bool hovered: false
     property bool pressed: false
 
@@ -58,7 +68,7 @@ Item { // Window
     y: initY
     width: targetWindowWidth
     height: targetWindowHeight
-    opacity: windowData.monitor == widgetMonitorId ? 1 : 0.4
+    opacity: windowData?.monitor == widgetMonitorId ? 1 : 0.4
 
     property real topLeftRadius
     property real topRightRadius
@@ -94,7 +104,7 @@ Item { // Window
         id: windowPreview
         anchors.fill: parent
         captureSource: GlobalStates.overviewOpen ? root.toplevel : null
-        live: true
+        live: false
 
         // Color overlay for interactions
         Rectangle {
