@@ -81,10 +81,16 @@ Singleton {
         });
     }
 
+    property var iconExistsCache: ({})
+    property var guessIconCache: ({})
+
     function iconExists(iconName) {
-        if (!iconName || iconName.length == 0) return false;
-        return (Quickshell.iconPath(iconName, true).length > 0) 
+        if (!iconName || iconName.length === 0) return false;
+        if (iconExistsCache[iconName] !== undefined) return iconExistsCache[iconName];
+        const exists = (Quickshell.iconPath(iconName, true).length > 0) 
             && !iconName.includes("image-missing");
+        iconExistsCache[iconName] = exists;
+        return exists;
     }
 
     function getReverseDomainNameAppName(str) {
@@ -100,8 +106,14 @@ Singleton {
     }
 
     function guessIcon(str) {
-        if (!str || str.length == 0) return "image-missing";
+        if (!str || str.length === 0) return "image-missing";
+        if (guessIconCache[str] !== undefined) return guessIconCache[str];
+        const res = _computeGuessIcon(str);
+        guessIconCache[str] = res;
+        return res;
+    }
 
+    function _computeGuessIcon(str) {
         // Normal substitutions
         if (substitutions[str]) return substitutions[str];
         if (substitutions[str.toLowerCase()]) return substitutions[str.toLowerCase()];

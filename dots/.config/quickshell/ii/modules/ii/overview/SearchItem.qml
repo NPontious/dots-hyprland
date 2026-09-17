@@ -158,6 +158,7 @@ RippleButton {
                 source: AppSearch.iconExists(root.iconName) ? Quickshell.iconPath(root.iconName) : Quickshell.iconPath(AppSearch.guessIcon(root.iconName), "image-missing")
                 width: 35
                 height: 35
+                sourceSize: Qt.size(35, 35)
             }
         }
 
@@ -258,7 +259,7 @@ RippleButton {
             Layout.bottomMargin: -root.buttonVerticalPadding // Why is this necessary? Good question.
             spacing: 4
             Repeater {
-                model: (root.entry.actions ?? []).slice(0, 4)
+                model: (root.selected || root.hovered) ? ((root.entry?.actions ?? []).slice(0, 4)) : []
                 delegate: RippleButton {
                     id: actionButton
                     required property var modelData
@@ -286,8 +287,9 @@ RippleButton {
                             anchors.centerIn: parent
                             active: actionButton.iconType === LauncherSearchResult.IconType.System && actionButton.iconName !== ""
                             sourceComponent: IconImage {
-                                source: Quickshell.iconPath(actionButton.iconName)
+                                source: AppSearch.iconExists(actionButton.iconName) ? Quickshell.iconPath(actionButton.iconName) : ""
                                 implicitSize: 20
+                                sourceSize: Qt.size(20, 20)
                             }
                         }
                     }

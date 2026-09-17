@@ -140,15 +140,9 @@ Item { // Window
             mipmap: true
             Layout.alignment: Qt.AlignHCenter
             source: root.iconPath
+            sourceSize: Qt.size(128, 128)
             width: iconSize
             height: iconSize
-
-            Behavior on width {
-                animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
-            }
-            Behavior on height {
-                animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
-            }
         }
     }
 }

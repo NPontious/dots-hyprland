@@ -129,11 +129,11 @@ Item { // Wrapper
             spacing: 0
 
             // clip: true
-            layer.enabled: true
+            layer.enabled: root.showResults
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
                     width: searchWidgetContent.width
-                    height: searchWidgetContent.width
+                    height: searchWidgetContent.height
                     radius: searchWidgetContent.radius
                 }
             }
@@ -186,18 +186,29 @@ Item { // Wrapper
 
                 Timer {
                     id: debounceTimer
-                    interval: root.typingDebounceInterval
+                    interval: 80
+                    repeat: false
                     onTriggered: {
-                        resultModel.values = LauncherSearch.results ?? [];
+                        resultModel.values = (LauncherSearch.results ?? []).slice(0, root.typingResultLimit);
+                        root.focusFirstItem();
                     }
                 }
 
                 Connections {
                     target: LauncherSearch
                     function onResultsChanged() {
-                        resultModel.values = LauncherSearch.results.slice(0, root.typingResultLimit);
-                        root.focusFirstItem();
-                        debounceTimer.restart();
+                        const results = LauncherSearch.results ?? [];
+                        if (results.length === 0 || root.searchingText === "") {
+                            debounceTimer.stop();
+                            resultModel.values = [];
+                        } else if (resultModel.values.length === 0) {
+                            // Display first result immediately so first keystroke has 0ms latency
+                            resultModel.values = results.slice(0, root.typingResultLimit);
+                            root.focusFirstItem();
+                        } else {
+                            // Debounce subsequent rapid keystrokes to prevent main thread frame drops
+                            debounceTimer.restart();
+                        }
                     }
                 }
 
