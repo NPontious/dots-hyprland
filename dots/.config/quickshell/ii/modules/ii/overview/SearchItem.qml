@@ -158,7 +158,6 @@ RippleButton {
                 source: AppSearch.iconExists(root.iconName) ? Quickshell.iconPath(root.iconName) : Quickshell.iconPath(AppSearch.guessIcon(root.iconName), "image-missing")
                 width: 35
                 height: 35
-                sourceSize: Qt.size(35, 35)
             }
         }
 
@@ -289,7 +288,6 @@ RippleButton {
                             sourceComponent: IconImage {
                                 source: AppSearch.iconExists(actionButton.iconName) ? Quickshell.iconPath(actionButton.iconName) : ""
                                 implicitSize: 20
-                                sourceSize: Qt.size(20, 20)
                             }
                         }
                     }
