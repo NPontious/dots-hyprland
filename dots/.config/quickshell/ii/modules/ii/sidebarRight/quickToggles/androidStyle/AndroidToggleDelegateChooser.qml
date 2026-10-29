@@ -19,6 +19,7 @@ DelegateChooser {
     signal openBluetoothDialog()
     signal openNightLightDialog()
     signal openWifiDialog()
+    signal openTailscaleDialog()
 
     role: "type"
 
@@ -81,6 +82,9 @@ DelegateChooser {
         baseCellHeight: root.baseCellHeight
         cellSpacing: root.spacing
         cellSize: modelData.size
+        onOpenMenu: {
+            root.openTailscaleDialog()
+        }
     } }
 
     DelegateChoice { roleValue: "colorPicker"; AndroidColorPickerToggle {

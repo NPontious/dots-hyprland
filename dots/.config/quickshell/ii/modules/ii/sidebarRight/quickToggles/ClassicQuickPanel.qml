@@ -34,6 +34,10 @@ AbstractQuickPanel {
         GameMode {}
         IdleInhibitor {}
         EasyEffectsToggle {}
-        Tailscale {}
+        Tailscale {
+            altAction: () => {
+                root.openTailscaleDialog();
+            }
+        }
     }
 }

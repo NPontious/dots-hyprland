@@ -13,6 +13,7 @@ import qs.modules.waffle.actionCenter.bluetooth
 import qs.modules.waffle.actionCenter.nightLight
 import qs.modules.waffle.actionCenter.volumeControl
 import qs.modules.waffle.actionCenter.wifi
+import qs.modules.waffle.actionCenter.tailscale
 
 DelegateChooser {
     id: root
@@ -45,6 +46,9 @@ DelegateChooser {
         ActionCenterToggleButton {
             toggleModel: TailscaleToggle {}
             icon: "shield"
+            menu: Component {
+                TailscaleControl {}
+            }
         }
     }
     DelegateChoice {
