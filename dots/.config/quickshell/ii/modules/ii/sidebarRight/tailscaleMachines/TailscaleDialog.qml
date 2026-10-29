@@ -43,15 +43,9 @@ WindowDialog {
         spacing: 0
         animateAppearance: false
 
-        model: ScriptModel {
-            values: [TailscaleService.selfNode, ...TailscaleService.peers]
-        }
+        model: TailscaleService.machines
         delegate: TailscaleMachineItem {
-            required property var modelData
-            anchors {
-                left: parent?.left
-                right: parent?.right
-            }
+            width: ListView.view.width
         }
     }
 
@@ -73,7 +67,7 @@ WindowDialog {
             Layout.alignment: Qt.AlignHCenter
             color: Appearance.colors.colSubtext
             text: Translation.tr("Tailscale is disconnected")
-            font.pixelSize: Appearance.font.pixelSize.medium
+            font.pixelSize: Appearance.font.pixelSize.normal
         }
 
         DialogButton {

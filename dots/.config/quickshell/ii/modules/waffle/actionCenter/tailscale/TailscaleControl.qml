@@ -74,12 +74,8 @@ Item {
                     clip: true
                     spacing: 4
 
-                    model: ScriptModel {
-                        values: [TailscaleService.selfNode, ...TailscaleService.peers]
-                    }
+                    model: TailscaleService.machines
                     delegate: WTailscaleMachineItem {
-                        required property var modelData
-                        machine: modelData
                         width: ListView.view.width
                     }
                 }

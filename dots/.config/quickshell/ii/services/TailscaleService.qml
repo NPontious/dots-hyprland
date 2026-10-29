@@ -14,6 +14,7 @@ Singleton {
     property string backendState: "NoState"
     property var selfNode: ({ hostName: "", dnsName: "", ip: "", os: "", online: false, isSelf: true })
     property list<var> peers: []
+    property list<var> machines: []
     property bool refreshing: false
 
     function refresh() {
@@ -128,6 +129,7 @@ Singleton {
                     })
 
                     root.peers = peerList
+                    root.machines = [root.selfNode, ...peerList]
                 } catch (e) {
                     console.error("[TailscaleService] Error parsing status:", e)
                 }

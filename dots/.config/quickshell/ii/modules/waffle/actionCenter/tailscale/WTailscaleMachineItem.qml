@@ -11,7 +11,8 @@ import qs.modules.waffle.actionCenter
 
 ExpandableChoiceButton {
     id: root
-    required property var machine
+    property var modelData: null
+    property var machine: modelData
 
     function getDeviceIcon() {
         if (!root.machine) return "desktop"

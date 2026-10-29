@@ -7,7 +7,7 @@ import QtQuick.Layouts
 
 DialogListItem {
     id: root
-    required property var modelData
+    property var modelData: null
 
     onClicked: {
         TailscaleService.copyIp(root.modelData?.ip, root.modelData?.hostName)
