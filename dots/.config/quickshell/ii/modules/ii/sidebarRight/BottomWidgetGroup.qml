@@ -5,6 +5,7 @@ import qs.services
 import qs.modules.ii.sidebarRight.calendar
 import qs.modules.ii.sidebarRight.todo
 import qs.modules.ii.sidebarRight.pomodoro
+import qs.modules.ii.sidebarRight.tailscaleMachines
 import QtQuick
 import QtQuick.Layouts
 
@@ -35,6 +36,12 @@ Rectangle {
             "name": Translation.tr("Timer"),
             "icon": "schedule",
             "widget": "pomodoro/PomodoroWidget.qml"
+        },
+        {
+            "type": "tailscale",
+            "name": Translation.tr("Tailscale"),
+            "icon": "vpn_lock",
+            "widget": "tailscaleMachines/TailscaleWidget.qml"
         },
     ]
 
