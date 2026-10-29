@@ -45,6 +45,8 @@ WindowDialog {
 
         model: TailscaleService.machines
         delegate: TailscaleMachineItem {
+            required property var modelData
+            machine: modelData
             width: ListView.view.width
         }
     }

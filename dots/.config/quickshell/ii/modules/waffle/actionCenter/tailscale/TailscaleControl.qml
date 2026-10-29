@@ -76,6 +76,8 @@ Item {
 
                     model: TailscaleService.machines
                     delegate: WTailscaleMachineItem {
+                        required property var modelData
+                        machine: modelData
                         width: ListView.view.width
                     }
                 }
