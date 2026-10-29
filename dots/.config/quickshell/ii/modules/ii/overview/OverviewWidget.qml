@@ -209,8 +209,8 @@ Item {
                     property int workspaceRowIndex: getWsRow(windowData?.workspace?.id ?? 1)
                     xOffset: (root.workspaceImplicitWidth + workspaceSpacing) * workspaceColIndex
                     yOffset: (root.workspaceImplicitHeight + workspaceSpacing) * workspaceRowIndex
-                    property real xWithinWorkspaceWidget: Math.max((((windowData?.at && windowData.at.length > 0) ? windowData.at[0] : 0) - (monitor?.x ?? 0) - ((monitorData?.reserved && monitorData.reserved.length > 0) ? monitorData.reserved[0] : 0)) * root.scale, 0)
-                    property real yWithinWorkspaceWidget: Math.max((((windowData?.at && windowData.at.length > 1) ? windowData.at[1] : 0) - (monitor?.y ?? 0) - ((monitorData?.reserved && monitorData.reserved.length > 1) ? monitorData.reserved[1] : 0)) * root.scale, 0)
+                    property real xWithinWorkspaceWidget: Math.max((((windowData?.at && windowData.at.length > 0) ? windowData.at[0] : 0) - (monitor?.x ?? 0) - ((monitorData?.reserved && monitorData.reserved.length > 0) ? monitorData.reserved[0] : 0)) * widthRatio * (root.scale ?? 1), 0)
+                    property real yWithinWorkspaceWidget: Math.max((((windowData?.at && windowData.at.length > 1) ? windowData.at[1] : 0) - (monitor?.y ?? 0) - ((monitorData?.reserved && monitorData.reserved.length > 1) ? monitorData.reserved[1] : 0)) * heightRatio * (root.scale ?? 1), 0)
 
                     // Radius
                     property real minRadius: Appearance.rounding.small
@@ -241,8 +241,8 @@ Item {
                         repeat: false
                         running: false
                         onTriggered: {
-                            window.x = Math.round(xWithinWorkspaceWidget + xOffset)
-                            window.y = Math.round(yWithinWorkspaceWidget + yOffset)
+                            window.x = Qt.binding(() => window.initX)
+                            window.y = Qt.binding(() => window.initY)
                         }
                     }
 
@@ -258,6 +258,7 @@ Item {
                         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                         drag.target: parent
                         onPressed: (mouse) => {
+                            updateWindowPosition.stop()
                             root.draggingFromWorkspace = windowData?.workspace.id
                             window.pressed = true
                             window.Drag.active = true
@@ -285,6 +286,7 @@ Item {
                                 const screenW = root.screen?.width ?? root.monWidth
                                 const screenH = root.screen?.height ?? root.monHeight
                                 Hyprland.dispatch(`hl.dsp.window.move({ x = "${percentageX * screenW}", y = "${percentageY * screenH}", window = "address:${window.windowData?.address}" })`)
+                                updateWindowPosition.restart()
                             }
                         }
                         onClicked: (event) => {
