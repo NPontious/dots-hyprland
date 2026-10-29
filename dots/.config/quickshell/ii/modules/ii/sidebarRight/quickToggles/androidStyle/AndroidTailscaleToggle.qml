@@ -9,5 +9,5 @@ import Quickshell.Io
 AndroidQuickToggleButton {
     id: root
 
-    toggleModel: CloudflareWarpToggle {}
+    toggleModel: TailscaleToggle {}
 }
