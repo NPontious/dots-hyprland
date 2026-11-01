@@ -47,7 +47,12 @@ Item {
                     Layout.fillWidth: true
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colSubtext
-                    text: AgentUsageService.summarySubtitle
+                    text: {
+                        const sub = AgentUsageService.summarySubtitle;
+                        return AgentUsageService.lastUpdated
+                            ? `${sub} • ${Translation.tr("Updated %1").arg(AgentUsageService.lastUpdated)}`
+                            : sub;
+                    }
                 }
             }
 
@@ -69,13 +74,6 @@ Item {
                     text: Translation.tr("Refresh")
                 }
             }
-        }
-
-        StyledIndeterminateProgressBar {
-            visible: AgentUsageService.refreshing
-            Layout.fillWidth: true
-            Layout.topMargin: -4
-            Layout.bottomMargin: -4
         }
 
         Rectangle {

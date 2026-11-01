@@ -12,6 +12,7 @@ Singleton {
     id: root
 
     property bool refreshing: false
+    property string lastUpdated: ""
 
     // Claude Code
     property bool claudeAvailable: false
@@ -210,6 +211,7 @@ Singleton {
     function checkDone() {
         if (!claudeProc.running && !agyProc.running) {
             root.refreshing = false
+            root.lastUpdated = new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
         }
     }
 

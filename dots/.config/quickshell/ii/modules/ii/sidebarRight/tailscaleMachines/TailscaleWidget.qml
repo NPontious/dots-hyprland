@@ -46,9 +46,14 @@ Item {
                     Layout.fillWidth: true
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colSubtext
-                    text: TailscaleService.connected
-                        ? (TailscaleService.selfNode?.ip ? TailscaleService.selfNode.ip : Translation.tr("Connected"))
-                        : Translation.tr("Disconnected")
+                    text: {
+                        const status = TailscaleService.connected
+                            ? (TailscaleService.selfNode?.ip ? TailscaleService.selfNode.ip : Translation.tr("Connected"))
+                            : Translation.tr("Disconnected");
+                        return TailscaleService.lastUpdated
+                            ? `${status} • ${Translation.tr("Updated %1").arg(TailscaleService.lastUpdated)}`
+                            : status;
+                    }
                 }
             }
 
@@ -78,13 +83,6 @@ Item {
                     text: TailscaleService.connected ? Translation.tr("Disconnect") : Translation.tr("Connect")
                 }
             }
-        }
-
-        StyledIndeterminateProgressBar {
-            visible: TailscaleService.refreshing
-            Layout.fillWidth: true
-            Layout.topMargin: -4
-            Layout.bottomMargin: -4
         }
 
         Rectangle {

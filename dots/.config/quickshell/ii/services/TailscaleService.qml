@@ -16,6 +16,7 @@ Singleton {
     property list<var> peers: []
     property list<var> machines: []
     property bool refreshing: false
+    property string lastUpdated: ""
 
     function refresh() {
         if (!fetchStatusProc.running) {
@@ -130,6 +131,7 @@ Singleton {
 
                     root.peers = peerList
                     root.machines = [root.selfNode, ...peerList]
+                    root.lastUpdated = new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
                 } catch (e) {
                     console.error("[TailscaleService] Error parsing status:", e)
                 }
