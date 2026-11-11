@@ -2,24 +2,36 @@ pragma Singleton
 import qs.modules.common
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 
 /**
- * A nice wrapper for date and time strings.
+ * Service managing idle and sleep inhibition.
  */
 Singleton {
     id: root
 
-    property alias inhibit: idleInhibitor.enabled
-    inhibit: false
+    property bool inhibit: false
 
-    Connections {
-        target: Persistent
-        function onReadyChanged() {
+    Component.onCompleted: {
+        if (Persistent.ready) {
             if (!Persistent.isNewHyprlandInstance) {
                 root.inhibit = Persistent.states.idle.inhibit;
             } else {
                 Persistent.states.idle.inhibit = root.inhibit;
+            }
+        }
+    }
+
+    Connections {
+        target: Persistent
+        function onReadyChanged() {
+            if (Persistent.ready) {
+                if (!Persistent.isNewHyprlandInstance) {
+                    root.inhibit = Persistent.states.idle.inhibit;
+                } else {
+                    Persistent.states.idle.inhibit = root.inhibit;
+                }
             }
         }
     }
@@ -35,21 +47,29 @@ Singleton {
 
     IdleInhibitor {
         id: idleInhibitor
+        enabled: root.inhibit
         window: PanelWindow {
-            // Inhibitor requires a "visible" surface
-            // Actually not lol
-            implicitWidth: 0
-            implicitHeight: 0
+            visible: root.inhibit
+            implicitWidth: 1
+            implicitHeight: 1
             color: "transparent"
-            // Just in case...
             anchors {
                 right: true
                 bottom: true
             }
-            // Make it not interactable
             mask: Region {
                 item: null
             }
+            Item {
+                width: 1
+                height: 1
+            }
         }
+    }
+
+    Process {
+        id: systemdInhibitProc
+        running: root.inhibit
+        command: ["systemd-inhibit", "--what=idle:sleep", "--who=Quickshell", "--why=Keep system awake", "sleep", "infinity"]
     }
 }
