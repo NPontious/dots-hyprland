@@ -18,3 +18,11 @@ if ok then
 else
     print("[split-monitor-workspaces] Plugin not found at plugins.split-monitor-workspaces: " .. tostring(smw))
 end
+
+-- Hyprland ecosystem settings
+hl.config({
+    ecosystem = {
+        no_update_news = true,
+        no_donation_nag = true,
+    },
+})
