@@ -117,10 +117,18 @@ Item {
     component DualTrackModelRow: Rectangle {
         id: modelRow
         property string title: ""
+        property string primaryLabel: "5h:"
         property real fiveHourRemaining: 1.0
         property string fiveHourReset: ""
+        property real primaryWindowHours: 5
+        property int primarySegments: 5
+
+        property bool hasSecondary: true
+        property string secondaryLabel: "Wk:"
         property real weeklyRemaining: 1.0
         property string weeklyReset: ""
+        property real secondaryWindowHours: 168
+        property int secondarySegments: 7
 
         readonly property int fiveHourPct: Math.round(Math.max(0, Math.min(1, fiveHourRemaining)) * 100)
         readonly property int weeklyPct: Math.round(Math.max(0, Math.min(1, weeklyRemaining)) * 100)
@@ -150,11 +158,11 @@ Item {
                     Layout.fillWidth: true
                 }
 
-                // 5h Readout
+                // Primary Readout
                 RowLayout {
                     spacing: 2
                     StyledText {
-                        text: "5h:"
+                        text: modelRow.primaryLabel
                         font.pixelSize: 10
                         color: Appearance.colors.colSubtext
                     }
@@ -173,12 +181,13 @@ Item {
                     }
                 }
 
-                // Weekly Readout
+                // Secondary Readout
                 RowLayout {
+                    visible: modelRow.hasSecondary
                     Layout.leftMargin: 4
                     spacing: 2
                     StyledText {
-                        text: "Wk:"
+                        text: modelRow.secondaryLabel
                         font.pixelSize: 10
                         color: Appearance.colors.colSubtext
                     }
@@ -198,23 +207,24 @@ Item {
                 }
             }
 
-            // Dual Semantic Pip Tracks (Top = 5h [5 pips], Bottom = Weekly [7 pips])
+            // Dual Semantic Pip Tracks (Top = Primary, Bottom = Secondary)
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 5
 
                 SemanticPipTrack {
                     Layout.fillWidth: true
-                    segments: 5
+                    segments: modelRow.primarySegments
                     remainingRatio: modelRow.fiveHourRemaining
-                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.fiveHourReset, 5)
+                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.fiveHourReset, modelRow.primaryWindowHours)
                 }
 
                 SemanticPipTrack {
+                    visible: modelRow.hasSecondary
                     Layout.fillWidth: true
-                    segments: 7
+                    segments: modelRow.secondarySegments
                     remainingRatio: modelRow.weeklyRemaining
-                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.weeklyReset, 168)
+                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.weeklyReset, modelRow.secondaryWindowHours)
                 }
             }
         }
@@ -236,7 +246,9 @@ Item {
             MaterialSymbol {
                 iconSize: Appearance.font.pixelSize.larger
                 text: "smart_toy"
-                color: (AgentUsageService.claudeSignedIn || AgentUsageService.antigravitySignedIn)
+                color: ((AgentUsageService.claudeAvailable && AgentUsageService.claudeSignedIn) ||
+                        (AgentUsageService.antigravityAvailable && AgentUsageService.antigravitySignedIn) ||
+                        (AgentUsageService.codexAvailable && AgentUsageService.codexSignedIn))
                     ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
             }
 
@@ -295,10 +307,50 @@ Item {
                 width: flickable.width
                 spacing: 10
 
+                // Empty State (None installed)
+                Rectangle {
+                    visible: !AgentUsageService.claudeAvailable && !AgentUsageService.antigravityAvailable && !AgentUsageService.codexAvailable
+                    Layout.fillWidth: true
+                    radius: Appearance.rounding.small
+                    color: Appearance.colors.colLayer2
+                    border.color: Appearance.colors.colOutlineVariant
+                    border.width: 1
+                    implicitHeight: emptyCol.implicitHeight + 24
+
+                    ColumnLayout {
+                        id: emptyCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 6
+
+                        MaterialSymbol {
+                            iconSize: 24
+                            text: "info"
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledText {
+                            text: Translation.tr("No AI Agent CLI tools installed")
+                            font.weight: 600
+                            font.pixelSize: Appearance.font.pixelSize.normal
+                            color: Appearance.colors.colOnSurface
+                        }
+
+                        StyledText {
+                            text: Translation.tr("Install Claude Code ('claude'), Google Antigravity ('agy'), or OpenAI Codex ('codex') to monitor quota usage.")
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.Wrap
+                            Layout.fillWidth: true
+                        }
+                    }
+                }
+
                 // =============================================================
                 // HARNESS 1: Claude Code
                 // =============================================================
                 Rectangle {
+                    visible: AgentUsageService.claudeAvailable
                     Layout.fillWidth: true
                     radius: Appearance.rounding.small
                     color: Appearance.colors.colLayer2
@@ -317,9 +369,11 @@ Item {
                             Layout.fillWidth: true
                             spacing: 6
 
-                            MaterialSymbol {
-                                iconSize: 18
-                                text: "terminal"
+                            CustomIcon {
+                                width: 18
+                                height: 18
+                                source: "claude-symbolic.svg"
+                                colorize: true
                                 color: AgentUsageService.claudeSignedIn ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                             }
 
@@ -402,6 +456,7 @@ Item {
                 // HARNESS 2: Google Antigravity
                 // =============================================================
                 Rectangle {
+                    visible: AgentUsageService.antigravityAvailable
                     Layout.fillWidth: true
                     radius: Appearance.rounding.small
                     color: Appearance.colors.colLayer2
@@ -420,9 +475,11 @@ Item {
                             Layout.fillWidth: true
                             spacing: 6
 
-                            MaterialSymbol {
-                                iconSize: 18
-                                text: "neurology"
+                            CustomIcon {
+                                width: 18
+                                height: 18
+                                source: "antigravity-symbolic.svg"
+                                colorize: true
                                 color: AgentUsageService.antigravitySignedIn ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                             }
 
@@ -506,6 +563,119 @@ Item {
                         StyledText {
                             visible: !AgentUsageService.antigravitySignedIn
                             text: Translation.tr("Run 'agy' in a terminal to authenticate.")
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.Wrap
+                            Layout.fillWidth: true
+                        }
+                    }
+                }
+
+                // =============================================================
+                // HARNESS 3: OpenAI Codex
+                // =============================================================
+                Rectangle {
+                    visible: AgentUsageService.codexAvailable
+                    Layout.fillWidth: true
+                    radius: Appearance.rounding.small
+                    color: Appearance.colors.colLayer2
+                    border.color: Appearance.colors.colOutlineVariant
+                    border.width: 1
+                    implicitHeight: codexCol.implicitHeight + 20
+
+                    ColumnLayout {
+                        id: codexCol
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 8
+
+                        // Inline Uniform Harness Header
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            CustomIcon {
+                                width: 18
+                                height: 18
+                                source: "codex-symbolic.svg"
+                                colorize: true
+                                color: AgentUsageService.codexSignedIn ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
+                            }
+
+                            StyledText {
+                                text: "OpenAI Codex"
+                                font.weight: 600
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                color: Appearance.colors.colOnSurface
+                            }
+
+                            StyledText {
+                                visible: AgentUsageService.codexUser.length > 0
+                                text: AgentUsageService.codexUser
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            Item {
+                                visible: AgentUsageService.codexUser.length === 0
+                                Layout.fillWidth: true
+                            }
+
+                            Rectangle {
+                                visible: AgentUsageService.codexSignedIn
+                                radius: 10
+                                color: Appearance.colors.colPrimaryContainer
+                                implicitHeight: 18
+                                implicitWidth: codexActiveText.implicitWidth + 12
+                                StyledText {
+                                    id: codexActiveText
+                                    anchors.centerIn: parent
+                                    text: Translation.tr("Active")
+                                    font.pixelSize: 10
+                                    font.weight: 600
+                                    color: Appearance.colors.colOnPrimaryContainer
+                                }
+                            }
+
+                            Rectangle {
+                                visible: !AgentUsageService.codexSignedIn
+                                radius: 10
+                                color: Appearance.colors.colLayer2Hover
+                                implicitHeight: 18
+                                implicitWidth: codexSignedOutText.implicitWidth + 12
+                                StyledText {
+                                    id: codexSignedOutText
+                                    anchors.centerIn: parent
+                                    text: Translation.tr("Signed out")
+                                    font.pixelSize: 10
+                                    color: Appearance.colors.colSubtext
+                                }
+                            }
+                        }
+
+                        // Model Pool / Quota Box
+                        DualTrackModelRow {
+                            visible: AgentUsageService.codexSignedIn
+                            title: Translation.tr("Codex Quota")
+                            primaryLabel: AgentUsageService.codexPrimaryLabel
+                            fiveHourRemaining: AgentUsageService.codexPrimaryRemaining
+                            fiveHourReset: AgentUsageService.codexPrimaryReset
+                            primaryWindowHours: AgentUsageService.codexPrimaryWindowHours
+                            primarySegments: AgentUsageService.codexPrimaryWindowHours >= 720 ? 6 : (AgentUsageService.codexPrimaryWindowHours >= 168 ? 7 : 5)
+                            hasSecondary: AgentUsageService.codexHasSecondary
+                            secondaryLabel: AgentUsageService.codexSecondaryLabel
+                            weeklyRemaining: AgentUsageService.codexSecondaryRemaining
+                            weeklyReset: AgentUsageService.codexSecondaryReset
+                            secondaryWindowHours: AgentUsageService.codexSecondaryWindowHours
+                            secondarySegments: 7
+                        }
+
+                        // Signed out hint
+                        StyledText {
+                            visible: !AgentUsageService.codexSignedIn
+                            text: Translation.tr("Run 'codex login' in a terminal to authenticate.")
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colSubtext
                             wrapMode: Text.Wrap

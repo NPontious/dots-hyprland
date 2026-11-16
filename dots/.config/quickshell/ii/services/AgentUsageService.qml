@@ -37,25 +37,59 @@ Singleton {
     property real antigravity3p5hRemaining: 1.0
     property string antigravity3p5hReset: ""
 
+    // Codex
+    property bool codexAvailable: false
+    property bool codexSignedIn: false
+    property string codexUser: ""
+    property string codexPlanType: ""
+    property real codexPrimaryRemaining: 1.0
+    property int codexPrimaryPercent: 0
+    property string codexPrimaryReset: ""
+    property real codexPrimaryWindowHours: 720
+    property string codexPrimaryLabel: "30d:"
+    property real codexSecondaryRemaining: 1.0
+    property int codexSecondaryPercent: 0
+    property string codexSecondaryReset: ""
+    property real codexSecondaryWindowHours: 168
+    property string codexSecondaryLabel: "Wk:"
+    property bool codexHasSecondary: false
+
+    readonly property bool anyAvailable: claudeAvailable || antigravityAvailable || codexAvailable
+
     readonly property string summarySubtitle: {
         let signed = []
-        if (claudeSignedIn) signed.push("Claude Code")
-        if (antigravitySignedIn) signed.push("Antigravity")
-        if (signed.length === 0) return Translation.tr("No agents connected")
+        if (claudeAvailable && claudeSignedIn) signed.push("Claude Code")
+        if (antigravityAvailable && antigravitySignedIn) signed.push("Antigravity")
+        if (codexAvailable && codexSignedIn) signed.push("Codex")
+        if (signed.length === 0) {
+            let available = []
+            if (claudeAvailable) available.push("Claude")
+            if (antigravityAvailable) available.push("Antigravity")
+            if (codexAvailable) available.push("Codex")
+            if (available.length > 0) return Translation.tr("Signed out")
+            return Translation.tr("No agents installed")
+        }
         return signed.join(" & ")
     }
 
     readonly property string summaryText: {
         let parts = []
-        if (claudeSignedIn) {
+        if (claudeAvailable && claudeSignedIn) {
             parts.push(`Claude: ${claudeWeeklyPercent}% used`)
         }
-        if (antigravitySignedIn) {
+        if (antigravityAvailable && antigravitySignedIn) {
             const geminiPct = Math.round(antigravityGeminiWeeklyRemaining * 100)
             parts.push(`Gemini: ${geminiPct}% left`)
         }
+        if (codexAvailable && codexSignedIn) {
+            const codexPct = Math.round(codexPrimaryRemaining * 100)
+            parts.push(`Codex: ${codexPct}% left`)
+        }
         if (parts.length === 0) {
-            return Translation.tr("No agents active")
+            if (claudeAvailable || antigravityAvailable || codexAvailable) {
+                return Translation.tr("Agents signed out")
+            }
+            return Translation.tr("No agents installed")
         }
         return parts.join("  •  ")
     }
@@ -96,6 +130,7 @@ Singleton {
     function loadCached() {
         loadClaudeJson()
         loadGeminiJson()
+        loadCodexJson()
     }
 
     function loadClaudeJson() {
@@ -103,7 +138,6 @@ Singleton {
             const raw = claudeConfigFileView.text()
             if (!raw || raw.length === 0) return
             const parsed = JSON.parse(raw)
-            root.claudeAvailable = true
             if (parsed.oauthAccount) {
                 root.claudeUser = parsed.oauthAccount.emailAddress || parsed.oauthAccount.displayName || ""
                 const orgType = parsed.oauthAccount.organizationType ?? ""
@@ -135,13 +169,43 @@ Singleton {
             const raw = geminiAccountFileView.text()
             if (!raw || raw.length === 0) return
             const parsed = JSON.parse(raw)
-            root.antigravityAvailable = true
             if (parsed.active && parsed.active.length > 0) {
                 root.antigravityUser = parsed.active
                 root.antigravitySignedIn = true
             }
         } catch (e) {
             console.error("[AgentUsageService] Error reading cached google_accounts.json:", e)
+        }
+    }
+
+    function loadCodexJson() {
+        try {
+            const raw = codexAuthFileView.text()
+            if (!raw || raw.length === 0) return
+            const parsed = JSON.parse(raw)
+            if (parsed.tokens && (parsed.tokens.access_token || parsed.tokens.id_token)) {
+                root.codexSignedIn = true
+            }
+        } catch (e) {
+            console.error("[AgentUsageService] Error reading cached .codex/auth.json:", e)
+        }
+    }
+
+    function parseProbeOutput(output) {
+        if (!output || output.length === 0) return
+        const lines = output.split("\n")
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim()
+            if (line.indexOf("claude:") === 0) {
+                const p = line.substring(7).trim()
+                root.claudeAvailable = p.length > 0
+            } else if (line.indexOf("agy:") === 0) {
+                const p = line.substring(4).trim()
+                root.antigravityAvailable = p.length > 0
+            } else if (line.indexOf("codex:") === 0) {
+                const p = line.substring(6).trim()
+                root.codexAvailable = p.length > 0
+            }
         }
     }
 
@@ -215,8 +279,71 @@ Singleton {
         }
     }
 
+    function parseCodexOutput(output) {
+        if (!output || output.length === 0) return
+        try {
+            const data = JSON.parse(output)
+            root.codexAvailable = data.available ?? true
+            if (data.signedIn) {
+                root.codexSignedIn = true
+                if (data.user) root.codexUser = data.user
+                if (data.planType) root.codexPlanType = data.planType
+
+                if (data.primary) {
+                    root.codexPrimaryRemaining = data.primary.remainingFraction ?? 1.0
+                    root.codexPrimaryPercent = data.primary.usedPercent ?? 0
+                    root.codexPrimaryReset = data.primary.resetTime || ""
+                    const mins = data.primary.windowDurationMins || 0
+                    const hours = mins > 0 ? (mins / 60) : 720
+                    root.codexPrimaryWindowHours = hours
+                    if (hours >= 720) {
+                        root.codexPrimaryLabel = "30d:"
+                    } else if (hours >= 168) {
+                        root.codexPrimaryLabel = "Wk:"
+                    } else {
+                        root.codexPrimaryLabel = `${Math.round(hours)}h:`
+                    }
+                }
+
+                if (data.secondary) {
+                    root.codexHasSecondary = true
+                    root.codexSecondaryRemaining = data.secondary.remainingFraction ?? 1.0
+                    root.codexSecondaryPercent = data.secondary.usedPercent ?? 0
+                    root.codexSecondaryReset = data.secondary.resetTime || ""
+                    const mins = data.secondary.windowDurationMins || 0
+                    const hours = mins > 0 ? (mins / 60) : 168
+                    root.codexSecondaryWindowHours = hours
+                    if (hours >= 168) {
+                        root.codexSecondaryLabel = "Wk:"
+                    } else {
+                        root.codexSecondaryLabel = `${Math.round(hours)}h:`
+                    }
+                } else {
+                    root.codexHasSecondary = false
+                }
+            } else {
+                root.codexSignedIn = false
+            }
+        } catch (e) {
+            console.error("[AgentUsageService] Error parsing codex output:", e)
+        }
+    }
+
+    function launchActiveProcs() {
+        if (root.claudeAvailable && !claudeProc.running) {
+            claudeProc.running = true
+        }
+        if (root.antigravityAvailable && !agyProc.running) {
+            agyProc.running = true
+        }
+        if (root.codexAvailable && !codexProc.running) {
+            codexProc.running = true
+        }
+        root.checkDone()
+    }
+
     function checkDone() {
-        if (!claudeProc.running && !agyProc.running) {
+        if (!probeProc.running && !claudeProc.running && !agyProc.running && !codexProc.running) {
             root.refreshing = false
             root.lastUpdated = new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
         }
@@ -226,13 +353,11 @@ Singleton {
         root.refreshing = true
         claudeConfigFileView.reload()
         geminiAccountFileView.reload()
+        codexAuthFileView.reload()
         loadCached()
 
-        if (!claudeProc.running) {
-            claudeProc.running = true
-        }
-        if (!agyProc.running) {
-            agyProc.running = true
+        if (!probeProc.running) {
+            probeProc.running = true
         }
     }
 
@@ -262,6 +387,34 @@ Singleton {
         }
     }
 
+    FileView {
+        id: codexAuthFileView
+        path: FileUtils.trimFileProtocol(`${Directories.home}/.codex/auth.json`)
+        watchChanges: true
+        onFileChanged: {
+            this.reload()
+            root.loadCodexJson()
+        }
+        onLoadedChanged: {
+            root.loadCodexJson()
+        }
+    }
+
+    Process {
+        id: probeProc
+        command: ["bash", "-c", "echo claude:$(command -v claude || (test -x ~/.npm-global/bin/claude && echo ~/.npm-global/bin/claude) || true); echo agy:$(command -v agy || (test -x ~/.local/bin/agy && echo ~/.local/bin/agy) || true); echo codex:$(command -v codex || (test -x ~/.cargo/bin/codex && echo ~/.cargo/bin/codex) || true)"]
+        stdout: StdioCollector {
+            id: probeCollector
+            onStreamFinished: {
+                root.parseProbeOutput(probeCollector.text)
+                root.launchActiveProcs()
+            }
+        }
+        onExited: (exitCode, exitStatus) => {
+            root.launchActiveProcs()
+        }
+    }
+
     Process {
         id: claudeProc
         command: ["claude", "-p", "/usage", "--output-format", "json"]
@@ -273,7 +426,11 @@ Singleton {
         }
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0) {
-                root.loadClaudeJson()
+                if (exitCode === 127) {
+                    root.claudeAvailable = false
+                } else {
+                    root.loadClaudeJson()
+                }
             }
             root.checkDone()
         }
@@ -289,6 +446,26 @@ Singleton {
             }
         }
         onExited: (exitCode, exitStatus) => {
+            if (exitCode === 127) {
+                root.antigravityAvailable = false
+            }
+            root.checkDone()
+        }
+    }
+
+    Process {
+        id: codexProc
+        command: ["python3", Quickshell.shellPath("scripts/ai/codex-usage.py")]
+        stdout: StdioCollector {
+            id: codexCollector
+            onStreamFinished: {
+                root.parseCodexOutput(codexCollector.text)
+            }
+        }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0) {
+                root.loadCodexJson()
+            }
             root.checkDone()
         }
     }
