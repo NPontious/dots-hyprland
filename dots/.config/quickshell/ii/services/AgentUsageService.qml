@@ -22,6 +22,7 @@ Singleton {
     property int claudeSessionPercent: 0
     property int claudeWeeklyPercent: 0
     property string claudeWeeklyReset: ""
+    property string claudeSessionReset: ""
 
     // Antigravity
     property bool antigravityAvailable: false
@@ -113,6 +114,9 @@ Singleton {
                 const u = parsed.cachedUsageUtilization.utilization
                 if (u.five_hour && typeof u.five_hour.utilization === "number") {
                     root.claudeSessionPercent = Math.round(u.five_hour.utilization)
+                    if (u.five_hour.resets_at) {
+                        root.claudeSessionReset = formatResetTime(u.five_hour.resets_at)
+                    }
                 }
                 if (u.seven_day && typeof u.seven_day.utilization === "number") {
                     root.claudeWeeklyPercent = Math.round(u.seven_day.utilization)
@@ -149,9 +153,12 @@ Singleton {
             if (data.result) {
                 root.claudeSignedIn = true
                 const res = data.result
-                const sessionMatch = res.match(/Current session:\s*(\d+)%\s*used/i)
+                const sessionMatch = res.match(/Current session:\s*(\d+)%\s*used(?:\s*·\s*resets\s*([^\n]+))?/i)
                 if (sessionMatch) {
                     root.claudeSessionPercent = parseInt(sessionMatch[1])
+                    if (sessionMatch[2]) {
+                        root.claudeSessionReset = sessionMatch[2].trim()
+                    }
                 }
                 const weekMatch = res.match(/Current week(?:\s*\([^)]+\))?:\s*(\d+)%\s*used(?:\s*·\s*resets\s*([^\n]+))?/i)
                 if (weekMatch) {

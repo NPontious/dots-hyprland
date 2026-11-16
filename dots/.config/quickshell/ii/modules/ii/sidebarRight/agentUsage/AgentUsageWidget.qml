@@ -12,6 +12,215 @@ Item {
         AgentUsageService.load()
     }
 
+    // --- Helper Functions ---
+
+    // Extracts compact relative time like "(2d 2h)" or "(4h 59m)" from reset strings
+    function extractShortCountdown(resetStr) {
+        if (!resetStr || resetStr.length === 0) return "";
+        const formatted = AgentUsageService.formatResetTime ? AgentUsageService.formatResetTime(resetStr) : resetStr;
+        const parenMatch = formatted.match(/\(([^)]+)\)/);
+        if (parenMatch) return `(${parenMatch[1]})`;
+        return "";
+    }
+
+    // Parses remaining time ratio (0.0 to 1.0) from a reset string or ISO timestamp
+    function computeTimeRemainingRatio(resetStr, windowHours) {
+        if (!resetStr || resetStr.length === 0) return -1;
+        const totalMs = windowHours * 3600 * 1000;
+
+        // 1. Try parsing direct ISO / standard date string first
+        const parsedDate = Date.parse(resetStr);
+        if (!isNaN(parsedDate)) {
+            const diffMs = parsedDate - Date.now();
+            return Math.max(0.0, Math.min(1.0, diffMs / totalMs));
+        }
+
+        // 2. Fallback: parse relative duration text like "in 2d 2h" or "4h 59m"
+        const formatted = AgentUsageService.formatResetTime ? AgentUsageService.formatResetTime(resetStr) : resetStr;
+        let remHours = 0;
+        const dMatch = formatted.match(/(\d+)\s*d/);
+        const hMatch = formatted.match(/(\d+)\s*h/);
+        const mMatch = formatted.match(/(\d+)\s*m/);
+
+        if (dMatch || hMatch || mMatch) {
+            if (dMatch) remHours += parseInt(dMatch[1], 10) * 24;
+            if (hMatch) remHours += parseInt(hMatch[1], 10);
+            if (mMatch) remHours += parseInt(mMatch[1], 10) / 60.0;
+            return Math.max(0.0, Math.min(1.0, remHours / windowHours));
+        }
+
+        return -1; // Hide tick if reset timestamp isn't provided
+    }
+
+    // --- Reusable Component: Semantic Segmented Track + Pacing Tick ---
+    component SemanticPipTrack: Item {
+        id: track
+        property int segments: 5              // 5 for 5h window, 7 for weekly window
+        property real remainingRatio: 1.0     // 0.0 to 1.0 remaining quota
+        property real timeRemainingRatio: -1  // 0.0 to 1.0 remaining time (-1 hides tick)
+        property color fillColor: remainingRatio < 0.25
+            ? Appearance.colors.colError
+            : (remainingRatio < 0.5 ? Appearance.colors.colTertiary : Appearance.colors.colPrimary)
+
+        implicitHeight: 6
+
+        RowLayout {
+            anchors.fill: parent
+            spacing: track.segments === 5 ? 5 : 4
+
+            Repeater {
+                model: track.segments
+                delegate: Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    radius: 2
+                    color: Appearance.colors.colLayer1
+                    clip: true
+
+                    // Calculate partial fill for this specific segment (0.0 -> 1.0)
+                    property real segmentFill: {
+                        const scaled = Math.max(0.0, Math.min(1.0, track.remainingRatio)) * track.segments;
+                        return Math.max(0.0, Math.min(1.0, scaled - index));
+                    }
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: parent.width * parent.segmentFill
+                        radius: 2
+                        color: track.fillColor
+
+                        Behavior on width {
+                            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Time Pacing Tickmark
+        // Bar left of tick = overshooting pace | Bar right of tick = undershooting (surplus)
+        Rectangle {
+            visible: track.timeRemainingRatio >= 0.0 && track.timeRemainingRatio <= 1.0
+            width: 2
+            height: parent.height + 4
+            anchors.verticalCenter: parent.verticalCenter
+            radius: 1
+            color: Appearance.colors.colOnSurface
+            x: Math.max(0, Math.min(parent.width - width, (parent.width * track.timeRemainingRatio) - (width / 2)))
+            z: 2
+        }
+    }
+
+    // --- Reusable Component: Dual-Track Model Pool Box ---
+    component DualTrackModelRow: Rectangle {
+        id: modelRow
+        property string title: ""
+        property real fiveHourRemaining: 1.0
+        property string fiveHourReset: ""
+        property real weeklyRemaining: 1.0
+        property string weeklyReset: ""
+
+        readonly property int fiveHourPct: Math.round(Math.max(0, Math.min(1, fiveHourRemaining)) * 100)
+        readonly property int weeklyPct: Math.round(Math.max(0, Math.min(1, weeklyRemaining)) * 100)
+
+        Layout.fillWidth: true
+        radius: Appearance.rounding.small
+        color: Appearance.colors.colLayer1
+        implicitHeight: rowCol.implicitHeight + 16
+
+        ColumnLayout {
+            id: rowCol
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 6
+
+            // Top Inline Summary Header
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
+
+                StyledText {
+                    text: modelRow.title
+                    font.weight: 600
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: Appearance.colors.colOnSurface
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+
+                // 5h Readout
+                RowLayout {
+                    spacing: 2
+                    StyledText {
+                        text: "5h:"
+                        font.pixelSize: 10
+                        color: Appearance.colors.colSubtext
+                    }
+                    StyledText {
+                        text: `${modelRow.fiveHourPct}%`
+                        font.pixelSize: 10
+                        font.weight: 700
+                        color: modelRow.fiveHourPct < 25 ? Appearance.colors.colError : Appearance.colors.colPrimary
+                    }
+                    StyledText {
+                        readonly property string cd: root.extractShortCountdown(modelRow.fiveHourReset)
+                        visible: cd.length > 0
+                        text: cd
+                        font.pixelSize: 10
+                        color: Appearance.colors.colSubtext
+                    }
+                }
+
+                // Weekly Readout
+                RowLayout {
+                    Layout.leftMargin: 4
+                    spacing: 2
+                    StyledText {
+                        text: "Wk:"
+                        font.pixelSize: 10
+                        color: Appearance.colors.colSubtext
+                    }
+                    StyledText {
+                        text: `${modelRow.weeklyPct}%`
+                        font.pixelSize: 10
+                        font.weight: 700
+                        color: modelRow.weeklyPct < 25 ? Appearance.colors.colError : Appearance.colors.colPrimary
+                    }
+                    StyledText {
+                        readonly property string cd: root.extractShortCountdown(modelRow.weeklyReset)
+                        visible: cd.length > 0
+                        text: cd
+                        font.pixelSize: 10
+                        color: Appearance.colors.colSubtext
+                    }
+                }
+            }
+
+            // Dual Semantic Pip Tracks (Top = 5h [5 pips], Bottom = Weekly [7 pips])
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 5
+
+                SemanticPipTrack {
+                    Layout.fillWidth: true
+                    segments: 5
+                    remainingRatio: modelRow.fiveHourRemaining
+                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.fiveHourReset, 5)
+                }
+
+                SemanticPipTrack {
+                    Layout.fillWidth: true
+                    segments: 7
+                    remainingRatio: modelRow.weeklyRemaining
+                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.weeklyReset, 168)
+                }
+            }
+        }
+    }
+
+    // --- Main Layout ---
     ColumnLayout {
         anchors.fill: parent
         anchors.topMargin: 10
@@ -19,7 +228,7 @@ Item {
         anchors.rightMargin: 10
         spacing: 8
 
-        // Header
+        // Compact Top Header
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
@@ -31,41 +240,37 @@ Item {
                     ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
             }
 
-            ColumnLayout {
-                spacing: 0
+            RowLayout {
                 Layout.fillWidth: true
+                spacing: 6
 
                 StyledText {
-                    Layout.fillWidth: true
                     font.weight: 600
                     font.pixelSize: Appearance.font.pixelSize.normal
                     color: Appearance.colors.colOnSurface
-                    text: Translation.tr("Usage Limits")
+                    text: Translation.tr("Usage Quotas")
                 }
 
                 StyledText {
-                    Layout.fillWidth: true
+                    visible: AgentUsageService.lastUpdated && AgentUsageService.lastUpdated.length > 0
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colSubtext
-                    text: {
-                        const sub = AgentUsageService.summarySubtitle;
-                        return AgentUsageService.lastUpdated
-                            ? `${sub} • ${Translation.tr("Updated %1").arg(AgentUsageService.lastUpdated)}`
-                            : sub;
-                    }
+                    text: AgentUsageService.lastUpdated
                 }
+
+                Item { Layout.fillWidth: true }
             }
 
             RippleButton {
-                implicitWidth: 32
-                implicitHeight: 32
-                buttonRadius: 16
+                implicitWidth: 28
+                implicitHeight: 28
+                buttonRadius: 14
                 colBackground: "transparent"
                 colBackgroundHover: Appearance.colors.colLayer2Hover
                 colRipple: Appearance.colors.colLayer2Active
                 contentItem: MaterialSymbol {
                     anchors.centerIn: parent
-                    iconSize: 20
+                    iconSize: 18
                     text: "refresh"
                     color: Appearance.colors.colOnSurface
                 }
@@ -76,14 +281,7 @@ Item {
             }
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 1
-            color: Appearance.colors.colOutlineVariant
-            opacity: 0.5
-        }
-
-        // Scrollable content area
+        // Scrollable Harness Cards
         StyledFlickable {
             id: flickable
             Layout.fillWidth: true
@@ -95,9 +293,11 @@ Item {
             ColumnLayout {
                 id: contentCol
                 width: flickable.width
-                spacing: 12
+                spacing: 10
 
-                // --- Claude Code Card ---
+                // =============================================================
+                // HARNESS 1: Claude Code
+                // =============================================================
                 Rectangle {
                     Layout.fillWidth: true
                     radius: Appearance.rounding.small
@@ -112,13 +312,13 @@ Item {
                         anchors.margins: 10
                         spacing: 8
 
-                        // Agent Card Header
+                        // Inline Uniform Harness Header
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 6
 
                             MaterialSymbol {
-                                iconSize: 20
+                                iconSize: 18
                                 text: "terminal"
                                 color: AgentUsageService.claudeSignedIn ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                             }
@@ -130,19 +330,31 @@ Item {
                                 color: Appearance.colors.colOnSurface
                             }
 
-                            Item { Layout.fillWidth: true }
+                            StyledText {
+                                visible: AgentUsageService.claudeUser.length > 0
+                                text: AgentUsageService.claudeUser
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            Item {
+                                visible: AgentUsageService.claudeUser.length === 0
+                                Layout.fillWidth: true
+                            }
 
                             Rectangle {
-                                visible: AgentUsageService.claudeSignedIn && AgentUsageService.claudeTier.length > 0
-                                radius: 4
+                                visible: AgentUsageService.claudeSignedIn
+                                radius: 10
                                 color: Appearance.colors.colPrimaryContainer
                                 implicitHeight: 18
-                                implicitWidth: tierText.implicitWidth + 8
+                                implicitWidth: claudeActiveText.implicitWidth + 12
                                 StyledText {
-                                    id: tierText
+                                    id: claudeActiveText
                                     anchors.centerIn: parent
-                                    text: AgentUsageService.claudeTier
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    text: Translation.tr("Active")
+                                    font.pixelSize: 10
                                     font.weight: 600
                                     color: Appearance.colors.colOnPrimaryContainer
                                 }
@@ -150,101 +362,28 @@ Item {
 
                             Rectangle {
                                 visible: !AgentUsageService.claudeSignedIn
-                                radius: 4
+                                radius: 10
                                 color: Appearance.colors.colLayer2Hover
                                 implicitHeight: 18
-                                implicitWidth: notSignedText.implicitWidth + 8
+                                implicitWidth: notSignedText.implicitWidth + 12
                                 StyledText {
                                     id: notSignedText
                                     anchors.centerIn: parent
                                     text: Translation.tr("Signed out")
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
-                                    color: Appearance.colors.colSubtext
-                                }
-                            }
-                        }
-
-                        StyledText {
-                            visible: AgentUsageService.claudeUser.length > 0
-                            text: AgentUsageService.claudeUser
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-
-                        // Claude Quotas (if signed in)
-                        ColumnLayout {
-                            visible: AgentUsageService.claudeSignedIn
-                            Layout.fillWidth: true
-                            spacing: 6
-
-                            // Current Session
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    StyledText {
-                                        text: Translation.tr("Current session")
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: Appearance.colors.colOnSurface
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    StyledText {
-                                        text: `${AgentUsageService.claudeSessionPercent}% used`
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        font.weight: 600
-                                        color: AgentUsageService.claudeSessionPercent > 80 ? Appearance.colors.colError : Appearance.colors.colOnSurface
-                                    }
-                                }
-
-                                StyledProgressBar {
-                                    Layout.fillWidth: true
-                                    value: AgentUsageService.claudeSessionPercent / 100
-                                    highlightColor: AgentUsageService.claudeSessionPercent > 80 ? Appearance.colors.colError : (AgentUsageService.claudeSessionPercent > 50 ? Appearance.colors.colTertiary : Appearance.colors.colPrimary)
-                                    trackColor: Appearance.colors.colLayer1
-                                    valueBarHeight: 6
-                                }
-                            }
-
-                            // Current Week
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    StyledText {
-                                        text: Translation.tr("Current week (all models)")
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: Appearance.colors.colOnSurface
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    StyledText {
-                                        text: `${AgentUsageService.claudeWeeklyPercent}% used`
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        font.weight: 600
-                                        color: AgentUsageService.claudeWeeklyPercent > 80 ? Appearance.colors.colError : Appearance.colors.colOnSurface
-                                    }
-                                }
-
-                                StyledProgressBar {
-                                    Layout.fillWidth: true
-                                    value: AgentUsageService.claudeWeeklyPercent / 100
-                                    highlightColor: AgentUsageService.claudeWeeklyPercent > 80 ? Appearance.colors.colError : (AgentUsageService.claudeWeeklyPercent > 50 ? Appearance.colors.colTertiary : Appearance.colors.colPrimary)
-                                    trackColor: Appearance.colors.colLayer1
-                                    valueBarHeight: 6
-                                }
-
-                                StyledText {
-                                    visible: AgentUsageService.claudeWeeklyReset.length > 0
-                                    text: Translation.tr("Resets: %1").arg(AgentUsageService.claudeWeeklyReset)
                                     font.pixelSize: 10
                                     color: Appearance.colors.colSubtext
                                 }
                             }
+                        }
+
+                        // Dual-Track Model Box (Normalized from "% used" to "% remaining")
+                        DualTrackModelRow {
+                            visible: AgentUsageService.claudeSignedIn
+                            title: Translation.tr("All Models")
+                            fiveHourRemaining: 1.0 - (AgentUsageService.claudeSessionPercent / 100.0)
+                            fiveHourReset: AgentUsageService.claudeSessionReset !== undefined ? AgentUsageService.claudeSessionReset : ""
+                            weeklyRemaining: 1.0 - (AgentUsageService.claudeWeeklyPercent / 100.0)
+                            weeklyReset: AgentUsageService.claudeWeeklyReset
                         }
 
                         // Signed out hint
@@ -259,7 +398,9 @@ Item {
                     }
                 }
 
-                // --- Google Antigravity Card ---
+                // =============================================================
+                // HARNESS 2: Google Antigravity
+                // =============================================================
                 Rectangle {
                     Layout.fillWidth: true
                     radius: Appearance.rounding.small
@@ -274,37 +415,49 @@ Item {
                         anchors.margins: 10
                         spacing: 8
 
-                        // Agent Card Header
+                        // Inline Uniform Harness Header
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 6
 
                             MaterialSymbol {
-                                iconSize: 20
+                                iconSize: 18
                                 text: "neurology"
                                 color: AgentUsageService.antigravitySignedIn ? Appearance.colors.colPrimary : Appearance.colors.colSubtext
                             }
 
                             StyledText {
-                                text: "Google Antigravity"
+                                text: "Antigravity"
                                 font.weight: 600
                                 font.pixelSize: Appearance.font.pixelSize.normal
                                 color: Appearance.colors.colOnSurface
                             }
 
-                            Item { Layout.fillWidth: true }
+                            StyledText {
+                                visible: AgentUsageService.antigravityUser.length > 0
+                                text: AgentUsageService.antigravityUser
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: Appearance.colors.colSubtext
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            Item {
+                                visible: AgentUsageService.antigravityUser.length === 0
+                                Layout.fillWidth: true
+                            }
 
                             Rectangle {
                                 visible: AgentUsageService.antigravitySignedIn
-                                radius: 4
+                                radius: 10
                                 color: Appearance.colors.colPrimaryContainer
                                 implicitHeight: 18
-                                implicitWidth: agyActiveText.implicitWidth + 8
+                                implicitWidth: agyActiveText.implicitWidth + 12
                                 StyledText {
                                     id: agyActiveText
                                     anchors.centerIn: parent
                                     text: Translation.tr("Active")
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    font.pixelSize: 10
                                     font.weight: 600
                                     color: Appearance.colors.colOnPrimaryContainer
                                 }
@@ -312,154 +465,40 @@ Item {
 
                             Rectangle {
                                 visible: !AgentUsageService.antigravitySignedIn
-                                radius: 4
+                                radius: 10
                                 color: Appearance.colors.colLayer2Hover
                                 implicitHeight: 18
-                                implicitWidth: agySignedOutText.implicitWidth + 8
+                                implicitWidth: agySignedOutText.implicitWidth + 12
                                 StyledText {
                                     id: agySignedOutText
                                     anchors.centerIn: parent
                                     text: Translation.tr("Signed out")
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    font.pixelSize: 10
                                     color: Appearance.colors.colSubtext
                                 }
                             }
                         }
 
-                        StyledText {
-                            visible: AgentUsageService.antigravityUser.length > 0
-                            text: AgentUsageService.antigravityUser
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.colors.colSubtext
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-
-                        // Antigravity Quotas (if signed in)
+                        // Model Pools (Gemini + Claude & GPT)
                         ColumnLayout {
                             visible: AgentUsageService.antigravitySignedIn
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 6
 
-                            // Section: Gemini Models
-                            StyledText {
-                                text: Translation.tr("Gemini Models (Flash, Pro)")
-                                font.weight: 600
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                color: Appearance.colors.colPrimary
+                            DualTrackModelRow {
+                                title: Translation.tr("Gemini")
+                                fiveHourRemaining: AgentUsageService.antigravityGemini5hRemaining
+                                fiveHourReset: AgentUsageService.antigravityGemini5hReset
+                                weeklyRemaining: AgentUsageService.antigravityGeminiWeeklyRemaining
+                                weeklyReset: AgentUsageService.antigravityGeminiWeeklyReset
                             }
 
-                            // Gemini 5h limit
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    StyledText {
-                                        text: Translation.tr("5-Hour Limit")
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: Appearance.colors.colOnSurface
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    StyledText {
-                                        text: `${Math.round(AgentUsageService.antigravityGemini5hRemaining * 100)}% left`
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        font.weight: 600
-                                        color: AgentUsageService.antigravityGemini5hRemaining < 0.2 ? Appearance.colors.colError : Appearance.colors.colOnSurface
-                                    }
-                                }
-
-                                StyledProgressBar {
-                                    Layout.fillWidth: true
-                                    value: AgentUsageService.antigravityGemini5hRemaining
-                                    highlightColor: AgentUsageService.antigravityGemini5hRemaining < 0.2 ? Appearance.colors.colError : (AgentUsageService.antigravityGemini5hRemaining < 0.5 ? Appearance.colors.colTertiary : Appearance.colors.colPrimary)
-                                    trackColor: Appearance.colors.colLayer1
-                                    valueBarHeight: 6
-                                }
-
-                                StyledText {
-                                    visible: AgentUsageService.antigravityGemini5hReset.length > 0
-                                    text: Translation.tr("Refreshes: %1").arg(AgentUsageService.formatResetTime(AgentUsageService.antigravityGemini5hReset))
-                                    font.pixelSize: 10
-                                    color: Appearance.colors.colSubtext
-                                }
-                            }
-
-                            // Gemini Weekly limit
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    StyledText {
-                                        text: Translation.tr("Weekly Limit")
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: Appearance.colors.colOnSurface
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    StyledText {
-                                        text: `${Math.round(AgentUsageService.antigravityGeminiWeeklyRemaining * 100)}% left`
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        font.weight: 600
-                                        color: AgentUsageService.antigravityGeminiWeeklyRemaining < 0.2 ? Appearance.colors.colError : Appearance.colors.colOnSurface
-                                    }
-                                }
-
-                                StyledProgressBar {
-                                    Layout.fillWidth: true
-                                    value: AgentUsageService.antigravityGeminiWeeklyRemaining
-                                    highlightColor: AgentUsageService.antigravityGeminiWeeklyRemaining < 0.2 ? Appearance.colors.colError : (AgentUsageService.antigravityGeminiWeeklyRemaining < 0.5 ? Appearance.colors.colTertiary : Appearance.colors.colPrimary)
-                                    trackColor: Appearance.colors.colLayer1
-                                    valueBarHeight: 6
-                                }
-
-                                StyledText {
-                                    visible: AgentUsageService.antigravityGeminiWeeklyReset.length > 0
-                                    text: Translation.tr("Refreshes: %1").arg(AgentUsageService.formatResetTime(AgentUsageService.antigravityGeminiWeeklyReset))
-                                    font.pixelSize: 10
-                                    color: Appearance.colors.colSubtext
-                                }
-                            }
-
-                            // Section: Claude and GPT models in Antigravity
-                            StyledText {
-                                Layout.topMargin: 4
-                                text: Translation.tr("Claude & GPT Models (Opus, Sonnet)")
-                                font.weight: 600
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                color: Appearance.colors.colPrimary
-                            }
-
-                            // 3P Weekly limit
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    StyledText {
-                                        text: Translation.tr("Weekly Limit")
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        color: Appearance.colors.colOnSurface
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    StyledText {
-                                        text: `${Math.round(AgentUsageService.antigravity3pWeeklyRemaining * 100)}% left`
-                                        font.pixelSize: Appearance.font.pixelSize.smaller
-                                        font.weight: 600
-                                        color: Appearance.colors.colOnSurface
-                                    }
-                                }
-
-                                StyledProgressBar {
-                                    Layout.fillWidth: true
-                                    value: AgentUsageService.antigravity3pWeeklyRemaining
-                                    highlightColor: AgentUsageService.antigravity3pWeeklyRemaining < 0.2 ? Appearance.colors.colError : Appearance.colors.colPrimary
-                                    trackColor: Appearance.colors.colLayer1
-                                    valueBarHeight: 6
-                                }
+                            DualTrackModelRow {
+                                title: Translation.tr("Claude & GPT")
+                                fiveHourRemaining: AgentUsageService.antigravity3p5hRemaining !== undefined ? AgentUsageService.antigravity3p5hRemaining : 1.0
+                                fiveHourReset: AgentUsageService.antigravity3p5hReset !== undefined ? AgentUsageService.antigravity3p5hReset : ""
+                                weeklyRemaining: AgentUsageService.antigravity3pWeeklyRemaining
+                                weeklyReset: AgentUsageService.antigravity3pWeeklyReset !== undefined ? AgentUsageService.antigravity3pWeeklyReset : ""
                             }
                         }
 
