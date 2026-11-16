@@ -19,12 +19,69 @@ DialogListItem {
 
     function getDeviceIcon() {
         if (!root.machine) return "devices"
-        if (root.machine.isSelf) return "laptop_chromebook"
         const name = (root.machine.hostName || "").toLowerCase()
+        const dns = (root.machine.dnsName || "").toLowerCase()
         const os = (root.machine.os || "").toLowerCase()
-        if (name.includes("tv")) return "tv"
-        if (os === "android" || os === "ios") return "smartphone"
-        if (os === "linux" || os === "windows" || os === "macos" || os === "darwin") return "computer"
+        const tags = (root.machine.tags || []).map(t => (t || "").toLowerCase())
+        const combined = `${name} ${dns} ${tags.join(" ")}`
+
+        // 1. TVs & Media Players
+        if (name.includes("tv") || combined.includes("appletv") || combined.includes("chromecast") ||
+            combined.includes("roku") || combined.includes("kodi") || combined.includes("shield") ||
+            combined.includes("firetv") || combined.includes("smarttv")) {
+            return "tv"
+        }
+
+        // 2. Tablets
+        if (combined.includes("tablet") || combined.includes("ipad")) {
+            return "tablet"
+        }
+
+        // 3. IoT, SBCs, Automotive, Embedded hardware
+        if (combined.includes("wican") || combined.includes("obd") || combined.includes("rpi") ||
+            combined.includes("raspberry") || combined.includes("esp32") || combined.includes("arduino") ||
+            combined.includes("iot") || combined.includes("sensor")) {
+            return "developer_board"
+        }
+
+        // 4. Routers & Networking gear
+        if (combined.includes("router") || combined.includes("gateway") || combined.includes("switch")) {
+            return "router"
+        }
+
+        // 5. Servers, NAS, Storage & Homelab infrastructure
+        if (tags.some(t => t.includes("server") || t.includes("nas") || t.includes("storage")) ||
+            combined.includes("server") || combined.includes("nas") || combined.includes("storage") ||
+            combined.includes("share") || combined.includes("proxmox") || combined.includes("unraid") ||
+            combined.includes("truenas") || combined.includes("synology") || combined.includes("homelab") ||
+            combined.includes("vault") || combined.includes("cluster") || combined.includes("backup")) {
+            return "dns"
+        }
+
+        // 6. Laptops / Notebooks
+        if (combined.includes("laptop") || combined.includes("notebook") || combined.includes("yoga") ||
+            combined.includes("thinkpad") || combined.includes("zenbook") || combined.includes("macbook") ||
+            combined.includes("xps") || combined.includes("framework") ||
+            (root.machine.isSelf && (root.machine.isLaptop || Battery.available))) {
+            return "laptop"
+        }
+
+        // 7. Desktop PCs & Workstations
+        if (combined.includes("desktop") || combined.includes("workstation") || combined.includes("tower") ||
+            combined.includes("rig") || combined.includes("gaming") || combined.includes("nuc") ||
+            combined.includes("imac") || combined.includes("mac-mini") || combined.includes("macmini") ||
+            combined.includes("pc")) {
+            return "computer"
+        }
+
+        // 8. OS-based fallbacks
+        if (os === "android" || os === "ios") {
+            return "smartphone"
+        }
+        if (os === "linux" || os === "windows" || os === "macos" || os === "darwin") {
+            return "computer"
+        }
+
         return "devices"
     }
 
