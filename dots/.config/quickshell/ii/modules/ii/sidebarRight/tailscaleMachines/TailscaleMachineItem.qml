@@ -9,6 +9,10 @@ DialogListItem {
     id: root
     property var machine: null
 
+    verticalPadding: 5
+    horizontalPadding: 10
+    buttonRadius: Appearance.rounding.small
+
     onClicked: {
         TailscaleService.copyIp(root.machine?.ip, root.machine?.hostName)
     }
@@ -32,16 +36,16 @@ DialogListItem {
             leftMargin: root.horizontalPadding
             rightMargin: root.horizontalPadding
         }
-        spacing: 12
+        spacing: 10
 
         MaterialSymbol {
-            iconSize: Appearance.font.pixelSize.larger
+            iconSize: 20
             text: root.getDeviceIcon()
             color: root.machine?.online ? Appearance.colors.colPrimary : Appearance.colors.colOnSurfaceVariant
         }
 
         ColumnLayout {
-            spacing: 2
+            spacing: 1
             Layout.fillWidth: true
 
             RowLayout {
@@ -54,12 +58,13 @@ DialogListItem {
                     text: root.machine?.hostName || root.machine?.dnsName || Translation.tr("Unknown machine")
                     textFormat: Text.PlainText
                     font.weight: root.machine?.isSelf ? 600 : 400
+                    font.pixelSize: Appearance.font.pixelSize.small
                 }
 
                 StyledText {
                     visible: root.machine?.isSelf ?? false
                     color: Appearance.colors.colPrimary
-                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.pixelSize: 11
                     text: Translation.tr("(This machine)")
                 }
             }
@@ -69,15 +74,15 @@ DialogListItem {
                 Layout.fillWidth: true
 
                 Rectangle {
-                    implicitWidth: 6
-                    implicitHeight: 6
-                    radius: 3
+                    implicitWidth: 5
+                    implicitHeight: 5
+                    radius: 2.5
                     color: root.machine?.online ? Appearance.colors.colPrimary : Appearance.colors.colOutlineVariant
                 }
 
                 StyledText {
                     Layout.fillWidth: true
-                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.pixelSize: 11
                     color: Appearance.colors.colSubtext
                     elide: Text.ElideRight
                     text: {
@@ -92,13 +97,22 @@ DialogListItem {
         }
 
         MaterialSymbol {
-            iconSize: 18
+            id: copyIcon
+            iconSize: 16
             text: "content_copy"
-            color: Appearance.colors.colOnLayer3
-        }
-    }
+            color: root.hovered ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer3
 
-    StyledToolTip {
-        text: Translation.tr("Click to copy IP (%1)").arg(root.machine?.ip ?? "")
+            Behavior on color {
+                ColorAnimation { duration: 150 }
+            }
+
+            StyledToolTip {
+                text: Translation.tr("Copy IP")
+                extraVisibleCondition: root.hovered
+                horizontalPadding: 8
+                verticalPadding: 3
+                font.pixelSize: 11
+            }
+        }
     }
 }
