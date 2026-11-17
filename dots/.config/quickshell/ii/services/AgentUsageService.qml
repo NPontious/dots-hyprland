@@ -137,9 +137,14 @@ Singleton {
     function loadClaudeJson() {
         try {
             const raw = claudeConfigFileView.text()
-            if (!raw || raw.length === 0) return
+            if (!raw || raw.length === 0) {
+                root.claudeUser = ""
+                root.claudeTier = ""
+                root.claudeSignedIn = false
+                return
+            }
             const parsed = JSON.parse(raw)
-            if (parsed.oauthAccount) {
+            if (parsed.oauthAccount && (parsed.oauthAccount.emailAddress || parsed.oauthAccount.displayName)) {
                 root.claudeUser = parsed.oauthAccount.emailAddress || parsed.oauthAccount.displayName || ""
                 const orgType = parsed.oauthAccount.organizationType ?? ""
                 const billingType = parsed.oauthAccount.billingType ?? ""
@@ -152,8 +157,16 @@ Singleton {
                     root.claudeTier = "Free"
                 }
                 root.claudeSignedIn = true
+            } else {
+                root.claudeUser = ""
+                root.claudeTier = ""
+                root.claudeSignedIn = false
+                root.claudeSessionPercent = 0
+                root.claudeWeeklyPercent = 0
+                root.claudeSessionReset = ""
+                root.claudeWeeklyReset = ""
             }
-            if (parsed.cachedUsageUtilization && parsed.cachedUsageUtilization.utilization) {
+            if (parsed.cachedUsageUtilization && parsed.cachedUsageUtilization.utilization && root.claudeSignedIn) {
                 const u = parsed.cachedUsageUtilization.utilization
                 if (u.five_hour && typeof u.five_hour.utilization === "number") {
                     root.claudeSessionPercent = Math.round(u.five_hour.utilization)
@@ -203,10 +216,15 @@ Singleton {
     function loadCodexJson() {
         try {
             const raw = codexAuthFileView.text()
-            if (!raw || raw.length === 0) return
+            if (!raw || raw.length === 0) {
+                root.codexSignedIn = false
+                return
+            }
             const parsed = JSON.parse(raw)
             if (parsed.tokens && (parsed.tokens.access_token || parsed.tokens.id_token)) {
                 root.codexSignedIn = true
+            } else {
+                root.codexSignedIn = false
             }
         } catch (e) {
             console.error("[AgentUsageService] Error reading cached .codex/auth.json:", e)
@@ -236,8 +254,19 @@ Singleton {
         try {
             const data = JSON.parse(output)
             root.claudeAvailable = true
+
+            // When logged out, credential_expires_at is absent and result is only "Total cost: $0.0000..."
+            // When logged in via subscription or OAuth, credential_expires_at is present or result contains session/week usage.
+            const hasCredentials = Boolean(data.credential_expires_at)
+            const hasUsageResult = Boolean(data.result) && !data.result.startsWith("Total cost:")
+
+            if (!hasCredentials && !hasUsageResult) {
+                root.loadClaudeJson()
+                return
+            }
+
+            root.claudeSignedIn = true
             if (data.result) {
-                root.claudeSignedIn = true
                 const res = data.result
                 const sessionMatch = res.match(/Current session:\s*(\d+)%\s*used(?:\s*·\s*resets\s*([^\n]+))?/i)
                 if (sessionMatch) {
