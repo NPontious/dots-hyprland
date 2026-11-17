@@ -12,22 +12,11 @@ Singleton {
     property bool available: false
     property bool connected: false
     property string backendState: "NoState"
-    property var selfNode: ({ hostName: "", dnsName: "", ip: "", os: "", tags: [], online: false, isSelf: true, isLaptop: false })
+    property var selfNode: ({ hostName: "", dnsName: "", ip: "", os: "", tags: [], online: false, isSelf: true })
     property list<var> peers: []
     property list<var> machines: []
     property bool refreshing: false
     property string lastUpdated: ""
-
-    FileView {
-        id: chassisView
-        path: "/sys/class/dmi/id/chassis_type"
-    }
-
-    readonly property bool isLaptop: {
-        const raw = chassisView.text().trim()
-        const num = parseInt(raw, 10)
-        return [8, 9, 10, 11, 14, 30, 31, 32].includes(num)
-    }
 
     function refresh() {
         if (!fetchStatusProc.running) {
@@ -111,8 +100,7 @@ Singleton {
                         tags: selfData.Tags ?? [],
                         online: selfData.Online ?? true,
                         active: false,
-                        isSelf: true,
-                        isLaptop: root.isLaptop
+                        isSelf: true
                     }
 
                     const rawPeers = parsed.Peer ?? {}
