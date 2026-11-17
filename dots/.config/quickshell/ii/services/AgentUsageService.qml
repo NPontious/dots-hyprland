@@ -255,13 +255,20 @@ Singleton {
             const data = JSON.parse(output)
             root.claudeAvailable = true
 
-            // When logged out, credential_expires_at is absent and result is only "Total cost: $0.0000..."
-            // When logged in via subscription or OAuth, credential_expires_at is present or result contains session/week usage.
+            // When logged out, credential_expires_at is absent and result contains no session/weekly quotas.
+            // When logged in via subscription or OAuth, credential_expires_at is present or result contains session/weekly usage.
+            const hasSessionUsage = Boolean(data.result) && /Current session:\s*\d+%/i.test(data.result)
+            const hasWeeklyUsage = Boolean(data.result) && /Current week.*:\s*\d+%/i.test(data.result)
             const hasCredentials = Boolean(data.credential_expires_at)
-            const hasUsageResult = Boolean(data.result) && !data.result.startsWith("Total cost:")
 
-            if (!hasCredentials && !hasUsageResult) {
-                root.loadClaudeJson()
+            if (!hasCredentials && !hasSessionUsage && !hasWeeklyUsage) {
+                root.claudeSignedIn = false
+                root.claudeUser = ""
+                root.claudeTier = ""
+                root.claudeSessionPercent = 0
+                root.claudeWeeklyPercent = 0
+                root.claudeSessionReset = ""
+                root.claudeWeeklyReset = ""
                 return
             }
 
