@@ -401,16 +401,20 @@ Item {
                             Rectangle {
                                 visible: AgentUsageService.claudeSignedIn
                                 radius: 10
-                                color: Appearance.colors.colPrimaryContainer
+                                color: (AgentUsageService.claudeTier && AgentUsageService.claudeTier.toLowerCase() !== "free")
+                                    ? Appearance.colors.colPrimaryContainer
+                                    : Appearance.colors.colLayer2Hover
                                 implicitHeight: 18
-                                implicitWidth: claudeActiveText.implicitWidth + 12
+                                implicitWidth: claudeTierText.implicitWidth + 12
                                 StyledText {
-                                    id: claudeActiveText
+                                    id: claudeTierText
                                     anchors.centerIn: parent
-                                    text: Translation.tr("Active")
+                                    text: AgentUsageService.claudeTier || Translation.tr("Free")
                                     font.pixelSize: 10
                                     font.weight: 600
-                                    color: Appearance.colors.colOnPrimaryContainer
+                                    color: (AgentUsageService.claudeTier && AgentUsageService.claudeTier.toLowerCase() !== "free")
+                                        ? Appearance.colors.colOnPrimaryContainer
+                                        : Appearance.colors.colSubtext
                                 }
                             }
 
@@ -507,16 +511,20 @@ Item {
                             Rectangle {
                                 visible: AgentUsageService.antigravitySignedIn
                                 radius: 10
-                                color: Appearance.colors.colPrimaryContainer
+                                color: (AgentUsageService.antigravityTier && AgentUsageService.antigravityTier.toLowerCase() !== "free")
+                                    ? Appearance.colors.colPrimaryContainer
+                                    : Appearance.colors.colLayer2Hover
                                 implicitHeight: 18
-                                implicitWidth: agyActiveText.implicitWidth + 12
+                                implicitWidth: agyTierText.implicitWidth + 12
                                 StyledText {
-                                    id: agyActiveText
+                                    id: agyTierText
                                     anchors.centerIn: parent
-                                    text: Translation.tr("Active")
+                                    text: AgentUsageService.antigravityTier || Translation.tr("Pro")
                                     font.pixelSize: 10
                                     font.weight: 600
-                                    color: Appearance.colors.colOnPrimaryContainer
+                                    color: (AgentUsageService.antigravityTier && AgentUsageService.antigravityTier.toLowerCase() !== "free")
+                                        ? Appearance.colors.colOnPrimaryContainer
+                                        : Appearance.colors.colSubtext
                                 }
                             }
 
@@ -626,16 +634,23 @@ Item {
                             Rectangle {
                                 visible: AgentUsageService.codexSignedIn
                                 radius: 10
-                                color: Appearance.colors.colPrimaryContainer
+                                color: (AgentUsageService.codexPlanType && AgentUsageService.codexPlanType.toLowerCase() !== "free")
+                                    ? Appearance.colors.colPrimaryContainer
+                                    : Appearance.colors.colLayer2Hover
                                 implicitHeight: 18
-                                implicitWidth: codexActiveText.implicitWidth + 12
+                                implicitWidth: codexTierText.implicitWidth + 12
                                 StyledText {
-                                    id: codexActiveText
+                                    id: codexTierText
                                     anchors.centerIn: parent
-                                    text: Translation.tr("Active")
+                                    text: {
+                                        const raw = AgentUsageService.codexPlanType || "Free"
+                                        return raw.charAt(0).toUpperCase() + raw.slice(1)
+                                    }
                                     font.pixelSize: 10
                                     font.weight: 600
-                                    color: Appearance.colors.colOnPrimaryContainer
+                                    color: (AgentUsageService.codexPlanType && AgentUsageService.codexPlanType.toLowerCase() !== "free")
+                                        ? Appearance.colors.colOnPrimaryContainer
+                                        : Appearance.colors.colSubtext
                                 }
                             }
 

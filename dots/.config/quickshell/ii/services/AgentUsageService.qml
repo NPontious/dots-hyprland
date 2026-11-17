@@ -28,6 +28,7 @@ Singleton {
     property bool antigravityAvailable: false
     property bool antigravitySignedIn: false
     property string antigravityUser: ""
+    property string antigravityTier: ""
     property real antigravityGeminiWeeklyRemaining: 1.0
     property string antigravityGeminiWeeklyReset: ""
     property real antigravityGemini5hRemaining: 1.0
@@ -141,7 +142,15 @@ Singleton {
             if (parsed.oauthAccount) {
                 root.claudeUser = parsed.oauthAccount.emailAddress || parsed.oauthAccount.displayName || ""
                 const orgType = parsed.oauthAccount.organizationType ?? ""
-                root.claudeTier = orgType === "claude_pro" ? "Pro" : orgType
+                const billingType = parsed.oauthAccount.billingType ?? ""
+                const hasActiveSub = billingType !== "" && billingType !== "none"
+                if (hasActiveSub && orgType === "claude_pro") {
+                    root.claudeTier = "Pro"
+                } else if (hasActiveSub && orgType.length > 0) {
+                    root.claudeTier = orgType
+                } else {
+                    root.claudeTier = "Free"
+                }
                 root.claudeSignedIn = true
             }
             if (parsed.cachedUsageUtilization && parsed.cachedUsageUtilization.utilization) {
@@ -167,15 +176,28 @@ Singleton {
     function loadGeminiJson() {
         try {
             const raw = geminiAccountFileView.text()
-            if (!raw || raw.length === 0) return
-            const parsed = JSON.parse(raw)
-            if (parsed.active && parsed.active.length > 0) {
-                root.antigravityUser = parsed.active
-                root.antigravitySignedIn = true
+            if (raw && raw.length > 0) {
+                const parsed = JSON.parse(raw)
+                if (parsed.active && parsed.active.length > 0) {
+                    root.antigravityUser = parsed.active
+                    root.antigravitySignedIn = true
+                }
             }
         } catch (e) {
             console.error("[AgentUsageService] Error reading cached google_accounts.json:", e)
         }
+
+        try {
+            const tierRaw = agyTierCacheView.text()
+            if (tierRaw && tierRaw.length > 0) {
+                const tierData = JSON.parse(tierRaw)
+                if (tierData.tier) root.antigravityTier = tierData.tier
+                if (tierData.email && !root.antigravityUser) {
+                    root.antigravityUser = tierData.email
+                    root.antigravitySignedIn = true
+                }
+            }
+        } catch (e) {}
     }
 
     function loadCodexJson() {
@@ -333,8 +355,9 @@ Singleton {
         if (root.claudeAvailable && !claudeProc.running) {
             claudeProc.running = true
         }
-        if (root.antigravityAvailable && !agyProc.running) {
-            agyProc.running = true
+        if (root.antigravityAvailable) {
+            if (!agyProc.running) agyProc.running = true
+            if (!agyTierProc.running) agyTierProc.running = true
         }
         if (root.codexAvailable && !codexProc.running) {
             codexProc.running = true
@@ -343,7 +366,7 @@ Singleton {
     }
 
     function checkDone() {
-        if (!probeProc.running && !claudeProc.running && !agyProc.running && !codexProc.running) {
+        if (!probeProc.running && !claudeProc.running && !agyProc.running && !agyTierProc.running && !codexProc.running) {
             root.refreshing = false
             root.lastUpdated = new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
         }
@@ -353,6 +376,7 @@ Singleton {
         root.refreshing = true
         claudeConfigFileView.reload()
         geminiAccountFileView.reload()
+        agyTierCacheView.reload()
         codexAuthFileView.reload()
         loadCached()
 
@@ -377,6 +401,19 @@ Singleton {
     FileView {
         id: geminiAccountFileView
         path: FileUtils.trimFileProtocol(`${Directories.home}/.gemini/google_accounts.json`)
+        watchChanges: true
+        onFileChanged: {
+            this.reload()
+            root.loadGeminiJson()
+        }
+        onLoadedChanged: {
+            root.loadGeminiJson()
+        }
+    }
+
+    FileView {
+        id: agyTierCacheView
+        path: FileUtils.trimFileProtocol(`${Directories.home}/.cache/quickshell/antigravity_tier.json`)
         watchChanges: true
         onFileChanged: {
             this.reload()
@@ -449,6 +486,27 @@ Singleton {
             if (exitCode === 127) {
                 root.antigravityAvailable = false
             }
+            root.checkDone()
+        }
+    }
+
+    Process {
+        id: agyTierProc
+        command: ["python3", Quickshell.shellPath("scripts/ai/antigravity-tier.py")]
+        stdout: StdioCollector {
+            id: agyTierCollector
+            onStreamFinished: {
+                try {
+                    const data = JSON.parse(agyTierCollector.text)
+                    if (data.tier) root.antigravityTier = data.tier
+                    if (data.email && !root.antigravityUser) {
+                        root.antigravityUser = data.email
+                        root.antigravitySignedIn = true
+                    }
+                } catch (e) {}
+            }
+        }
+        onExited: (exitCode, exitStatus) => {
             root.checkDone()
         }
     }
