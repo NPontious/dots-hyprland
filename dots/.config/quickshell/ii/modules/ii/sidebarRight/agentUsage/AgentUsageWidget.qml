@@ -61,6 +61,7 @@ Item {
         property color fillColor: remainingRatio < 0.25
             ? Appearance.colors.colError
             : (remainingRatio < 0.5 ? Appearance.colors.colTertiary : Appearance.colors.colPrimary)
+        property color trackColor: Appearance.colors.colLayer2Hover
 
         implicitHeight: 6
 
@@ -74,7 +75,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     radius: 2
-                    color: Appearance.colors.colLayer1
+                    color: track.trackColor
                     clip: true
 
                     // Calculate partial fill for this specific segment (0.0 -> 1.0)
