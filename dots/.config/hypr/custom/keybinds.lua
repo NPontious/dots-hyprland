@@ -38,7 +38,7 @@ if ok then
     hl.bind("SUPER + Page_Down", smw.cycle_workspaces("next"), { description = "Workspace: Next (monitor)" })
 
     -- Empty workspace jump and rogue window grab
-    hl.bind("SUPER + E", smw.workspace("empty"), { description = "Workspace: Focus first empty" })
-    hl.bind("SUPER + ALT + E", smw.move_to_workspace_silent("empty"), { description = "Window: Move to empty workspace" })
+    hl.bind("SUPER + ALT + E", smw.workspace("empty"), { description = "Workspace: Focus first empty" })
+    hl.bind("SUPER + SHIFT + E", smw.move_to_workspace_silent("empty"), { description = "Window: Move to empty workspace" })
     hl.bind("SUPER + SHIFT + G", smw.grab_rogue_windows(), { description = "Window: Grab unmapped windows" })
 end
