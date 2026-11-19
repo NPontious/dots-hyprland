@@ -13,7 +13,14 @@ Singleton {
 
     property bool inhibit: false
 
+    onInhibitChanged: {
+        if (!inhibit) {
+            Quickshell.execDetached(["pkill", "-f", "systemd-inhibit.*--who=Quickshell"]);
+        }
+    }
+
     Component.onCompleted: {
+        Quickshell.execDetached(["pkill", "-f", "systemd-inhibit.*--who=Quickshell.*sleep infinity"]);
         if (Persistent.ready) {
             if (!Persistent.isNewHyprlandInstance) {
                 root.inhibit = Persistent.states.idle.inhibit;
@@ -70,6 +77,7 @@ Singleton {
     Process {
         id: systemdInhibitProc
         running: root.inhibit
-        command: ["systemd-inhibit", "--what=idle:sleep", "--who=Quickshell", "--why=Keep system awake", "sleep", "infinity"]
+        stdinEnabled: true
+        command: ["systemd-inhibit", "--what=idle:sleep", "--who=Quickshell", "--why=Keep system awake", "cat"]
     }
 }
