@@ -12,31 +12,43 @@ Item {
         AgentUsageService.load()
     }
 
-    // --- Helper Functions ---
+    // --- Helper Properties & Functions ---
+
+    readonly property var currentNow: {
+        const _tick = DateTime?.clock?.date;
+        const _updated = AgentUsageService.lastUpdated;
+        return _tick || new Date();
+    }
 
     // Extracts compact relative time like "(2d 2h)" or "(4h 59m)" from reset strings
-    function extractShortCountdown(resetStr) {
+    function extractShortCountdown(resetStr, nowRef) {
         if (!resetStr || resetStr.length === 0) return "";
-        const formatted = AgentUsageService.formatResetTime ? AgentUsageService.formatResetTime(resetStr) : resetStr;
+        const now = nowRef || root.currentNow;
+        const formatted = AgentUsageService.formatResetTime ? AgentUsageService.formatResetTime(resetStr, now) : resetStr;
         const parenMatch = formatted.match(/\(([^)]+)\)/);
         if (parenMatch) return `(${parenMatch[1]})`;
+        if (formatted.toLowerCase().indexOf("resetting") !== -1 || formatted.toLowerCase().indexOf("soon") !== -1) {
+            return `(${Translation.tr("soon")})`;
+        }
         return "";
     }
 
     // Parses remaining time ratio (0.0 to 1.0) from a reset string or ISO timestamp
-    function computeTimeRemainingRatio(resetStr, windowHours) {
+    function computeTimeRemainingRatio(resetStr, windowHours, nowRef) {
         if (!resetStr || resetStr.length === 0) return -1;
         const totalMs = windowHours * 3600 * 1000;
+        const nowVal = nowRef || root.currentNow;
+        const now = (nowVal instanceof Date) ? nowVal.getTime() : (nowVal ? new Date(nowVal).getTime() : Date.now());
 
         // 1. Try parsing direct ISO / standard date string first
         const parsedDate = Date.parse(resetStr);
         if (!isNaN(parsedDate)) {
-            const diffMs = parsedDate - Date.now();
+            const diffMs = parsedDate - now;
             return Math.max(0.0, Math.min(1.0, diffMs / totalMs));
         }
 
         // 2. Fallback: parse relative duration text like "in 2d 2h" or "4h 59m"
-        const formatted = AgentUsageService.formatResetTime ? AgentUsageService.formatResetTime(resetStr) : resetStr;
+        const formatted = AgentUsageService.formatResetTime ? AgentUsageService.formatResetTime(resetStr, nowVal) : resetStr;
         let remHours = 0;
         const dMatch = formatted.match(/(\d+)\s*d/);
         const hMatch = formatted.match(/(\d+)\s*h/);
@@ -174,8 +186,8 @@ Item {
                         color: modelRow.fiveHourPct < 25 ? Appearance.colors.colError : Appearance.colors.colPrimary
                     }
                     StyledText {
-                        readonly property string cd: root.extractShortCountdown(modelRow.fiveHourReset)
-                        visible: cd.length > 0
+                        readonly property string cd: root.extractShortCountdown(modelRow.fiveHourReset, root.currentNow)
+                        visible: cd.length > 0 && (modelRow.fiveHourRemaining < 1.0 || modelRow.fiveHourPct < 100)
                         text: cd
                         font.pixelSize: 10
                         color: Appearance.colors.colSubtext
@@ -199,8 +211,8 @@ Item {
                         color: modelRow.weeklyPct < 25 ? Appearance.colors.colError : Appearance.colors.colPrimary
                     }
                     StyledText {
-                        readonly property string cd: root.extractShortCountdown(modelRow.weeklyReset)
-                        visible: cd.length > 0
+                        readonly property string cd: root.extractShortCountdown(modelRow.weeklyReset, root.currentNow)
+                        visible: cd.length > 0 && (modelRow.weeklyRemaining < 1.0 || modelRow.weeklyPct < 100)
                         text: cd
                         font.pixelSize: 10
                         color: Appearance.colors.colSubtext
@@ -217,7 +229,7 @@ Item {
                     Layout.fillWidth: true
                     segments: modelRow.primarySegments
                     remainingRatio: modelRow.fiveHourRemaining
-                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.fiveHourReset, modelRow.primaryWindowHours)
+                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.fiveHourReset, modelRow.primaryWindowHours, root.currentNow)
                 }
 
                 SemanticPipTrack {
@@ -225,7 +237,7 @@ Item {
                     Layout.fillWidth: true
                     segments: modelRow.secondarySegments
                     remainingRatio: modelRow.weeklyRemaining
-                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.weeklyReset, modelRow.secondaryWindowHours)
+                    timeRemainingRatio: root.computeTimeRemainingRatio(modelRow.weeklyReset, modelRow.secondaryWindowHours, root.currentNow)
                 }
             }
         }

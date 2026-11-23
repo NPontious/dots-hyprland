@@ -95,12 +95,12 @@ Singleton {
         return parts.join("  •  ")
     }
 
-    function formatResetTime(isoStr) {
+    function formatResetTime(isoStr, nowRef) {
         if (!isoStr || isoStr.length === 0) return ""
         try {
             const d = new Date(isoStr)
             if (isNaN(d.getTime())) return isoStr
-            const now = new Date()
+            const now = (nowRef instanceof Date) ? nowRef : (DateTime?.clock?.date ?? new Date())
             const diffMs = d.getTime() - now.getTime()
             if (diffMs <= 0) return Translation.tr("Resetting soon")
             const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
@@ -112,8 +112,10 @@ Singleton {
                 rel = `${days}d ${remHours}h`
             } else if (diffHours > 0) {
                 rel = `${diffHours}h ${diffMinutes}m`
-            } else {
+            } else if (diffMinutes > 0) {
                 rel = `${diffMinutes}m`
+            } else {
+                rel = "< 1m"
             }
             const timeStr = d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + ", " +
                             d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
