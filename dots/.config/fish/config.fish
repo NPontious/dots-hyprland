@@ -66,6 +66,17 @@ if status is-interactive
         end
     end
 
+    function mosh --description "mosh with per-host terminal colors"
+        # Apply the remote host's color scheme locally (mosh doesn't forward OSC sequences)
+        set -l remote_host $argv[-1]
+        set -l h (string lower "$remote_host")
+        if test -f ~/.config/terminal/$h-sequences.txt
+            cat ~/.config/terminal/$h-sequences.txt
+        end
+        command mosh $argv
+        restore_host_colors
+    end
+
     # nix-shell wrapper to keep Fish shell and Starship config active
     function nix-shell
         if not contains -- --run $argv; and not contains -- --command $argv
